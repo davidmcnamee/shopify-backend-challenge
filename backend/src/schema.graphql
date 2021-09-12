@@ -1,0 +1,88 @@
+
+type User {
+    id: ID!
+    username: String!
+    email: String!
+    inventory: [Image!]!
+}
+
+type Price {
+    amount: Int!
+    currency: String!
+    discount: Int! # percentage w/ 2 decimal places
+}
+
+type ImageOwnership {
+    uploader: User!
+    owner: User!
+}
+
+type Image {
+    id: ID!
+    hash: String!
+    url: String!
+    ownership: ImageOwnership!
+    price: Price
+    forSale: Boolean!
+    public: Boolean!
+}
+
+input SearchInput {
+    imageUrl: String
+    textQuery: String
+}
+
+input PurchaseImageInput {
+    imageID: ID!
+    price: Int!
+}
+
+input UploadImageInput {
+    url: String!
+    price: Price
+    forSale: Boolean!
+    public: Boolean!
+}
+
+input UpdateImageInput {
+    price: Price
+    forSale: Boolean
+    public: Boolean
+}
+
+input LoginInput {
+    username: String!
+    password: String!
+}
+
+input RegisterInput {
+    username: String!
+    password: String!
+    email: String!
+}
+
+union Object = Image | User
+
+type Query {
+    search(query: String): [Image!]!
+    images: [Image!]! # TODO: pagination if I have time
+    get(id: ID!): Object!
+}
+
+type ImageMutations {
+    purchaseImage(input: PurchaseImageInput!): Boolean!
+    updateImage(input: UpdateImageInput!): Image!
+    uploadImage(input: UploadImageInput!): Image!
+    uploadImages(input: [UploadImageInput!]!): [Image!]!
+    uploadImagesFromFile(url: String!): ID! # TODO: endpoints to check status of job
+}
+
+type UserMutations {
+    login(input: LoginInput!): User!
+    register(input: RegisterInput!): User!
+}
+
+type Mutation {
+    images: ImageMutations!
+    users: UserMutations!
+}
