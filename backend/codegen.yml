@@ -1,5 +1,10 @@
 schema: src/schema.graphql
 generates:
-  ./src/types.d.ts:
+  ./src/types/types.d.ts:
+    config:
+      allowParentTypeOverride: true
+      customResolverFn: "(parent: TParent, args: TArgs, context: TContext, info: GraphQLResolveInfo) => Promise<unknown> | unknown"
+      contextType: ./static#CustomContextType
     plugins:
       - typescript
+      - typescript-resolvers

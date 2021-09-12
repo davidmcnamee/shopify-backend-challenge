@@ -8,14 +8,19 @@
     "generate": "prisma generate && graphql-codegen"
   },
   "dependencies": {
+    "@prisma/client": "3.0.2",
     "apollo-server": "^3.3.0",
-    "graphql": "^15.5.3"
+    "graphql": "^15.5.3",
+    "image-hash": "^4.0.1",
+    "ts-custom-error": "^3.2.0"
   },
   "devDependencies": {
+    "@graphql-codegen/add": "^3.1.0",
     "@graphql-codegen/cli": "^2.2.0",
     "@graphql-codegen/typescript": "^2.2.2",
+    "@graphql-codegen/typescript-resolvers": "^2.2.1",
     "@types/node": "^16.9.1",
-    "prisma": "^3.0.2",
+    "prisma": "3.0.2",
     "typescript": "^4.4.3"
   }
 }

@@ -21,6 +21,7 @@ type Image {
     id: ID!
     hash: String!
     url: String!
+    title: String
     ownership: ImageOwnership!
     price: Price
     forSale: Boolean!

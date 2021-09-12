@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -8,4 +5,28 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+}
+
+model User {
+  id             String  @id @default(cuid())
+  username       String
+  email          String
+  uploadedImages Image[] @relation(name: "UploadedImages")
+  ownedImages    Image[] @relation(name: "OwnedImages")
+}
+
+model Image {
+  id         String  @id @default(cuid())
+  hash       String
+  url        String
+  title      String
+  amount     Int
+  currency   String
+  discount   Int
+  forSale    Boolean
+  public     Boolean
+  uploaderId String
+  ownerId    String
+  uploader   User    @relation(name: "UploadedImages", fields: [uploaderId], references: [id])
+  owner      User    @relation(name: "OwnedImages", fields: [ownerId], references: [id])
 }
