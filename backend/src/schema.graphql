@@ -12,6 +12,12 @@ type Price {
     discount: Int! # percentage w/ 2 decimal places
 }
 
+input PriceInput {
+    amount: Int!
+    currency: String!
+    discount: Int! # percentage w/ 2 decimal places
+}
+
 type ImageOwnership {
     uploader: User!
     owner: User!
@@ -40,15 +46,18 @@ input PurchaseImageInput {
 
 input UploadImageInput {
     url: String!
-    price: Price
+    price: PriceInput
     forSale: Boolean!
     public: Boolean!
+    title: String
 }
 
 input UpdateImageInput {
-    price: Price
+    id: ID!
+    price: PriceInput
     forSale: Boolean
     public: Boolean
+    title: String
 }
 
 input LoginInput {

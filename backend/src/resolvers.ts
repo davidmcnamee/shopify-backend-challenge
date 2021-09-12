@@ -1,7 +1,10 @@
-import { User, Query, Mutation, UserResolvers, ImageResolvers, ImageOwnershipResolvers, QueryResolvers, ImageMutationsResolvers, UserMutationsResolvers, MutationResolvers, PriceResolvers } from './types/types';
+import { Image as DbImage, User as DbUser } from '.prisma/client';
+import { zip } from 'lodash';
 import { db } from './db';
-import { User as DbUser, Image as DbImage } from '.prisma/client';
+import { computeHash, generateImageName } from './helpers';
+import { ClientError } from './types/exceptions';
 import { CustomContextType } from './types/static';
+import { ImageMutationsResolvers, ImageOwnershipResolvers, ImageResolvers, Mutation, MutationResolvers, Query, QueryResolvers, User, UserMutationsResolvers, UserResolvers } from './types/types';
 import { assertIsCorrectUser, assertUserExists } from './validators';
 
 const User: UserResolvers<CustomContextType, DbUser> = {
@@ -23,7 +26,7 @@ const ImageType: ImageResolvers<CustomContextType, DbImage> = {
     price: (parent) => parent,
 }
 
-const Ownership: ImageOwnershipResolvers<CustomContextType, DbImage> = {
+const ImageOwnership: ImageOwnershipResolvers<CustomContextType, DbImage> = {
     owner: (parent, args, context, info) => {
         return db.user.findUnique({where: {id: parent.ownerId}});
     },
@@ -62,34 +65,76 @@ const ImageMutations: ImageMutationsResolvers<CustomContextType> = {
         
         return true
     },
-    updateImage: (_parent, args, context, info) => {
-
-    },
-    uploadImage: (_parent, args, context, info) => {
-    },
-    uploadImages: (_parent, args, context, info) => {
-        assertUserExists(context.user);
-        const imageHashes = [];
-        for(const input of args.input) {
-            const { forSale, public: isPublic, url, price } = input;
-            
-        }
-        const images = db.image.findFirst({where: { OR: [{url}] }}) // TODO: check hash also
-        db.image.createMany({
-            data: []
+    updateImage: async (_parent, args, context, info) => {
+        const { forSale, price, public: isPublic, title, id } = args.input;
+        const image = await db.image.update({
+            where: { id },
+            data: {
+                forSale,
+                title,
+                public: isPublic,
+                amount: price.amount,
+                currency: price.currency,
+                discount: price.discount,
+            },
         })
+        return image;
+    },
+    uploadImage: async (_parent, args, context, info) => {
+        const hash = await computeHash(args.input.url);
+        const duplicateImage = db.image.findFirst({where: { hash }});
+        if(duplicateImage) throw new ClientError(400, "Cannot reupload a duplicate image.");
+        const image = await db.image.create({
+            data: {
+                hash: hash,
+                url: args.input.url,
+                title: args.input.title || generateImageName(),
+                amount: args.input.price.amount,
+                currency: args.input.price.currency,
+                discount: args.input.price.discount,
+                forSale: args.input.forSale,
+                public: args.input.public,
+                uploaderId: context.user.id,
+                ownerId: context.user.id,
+            },
+        });
+        return image;
+    },
+    uploadImages: async (_parent, args, context, info) => {
+        assertUserExists(context.user);
+        const imageHashes = await Promise.all(args.input.map(input => computeHash(input.url)));
+        const duplicateImage = db.image.findFirst({where: { hash: { in: imageHashes } }})
+        if(duplicateImage) throw new ClientError(400, "Cannot reupload a duplicate image.");
+        const images = await db.image.createMany({
+            data: zip(args.input, imageHashes).map(([input, hash]) => ({
+                hash: hash,
+                url: input.url,
+                title: input.title || generateImageName(),
+                amount: input.price.amount,
+                currency: input.price.currency,
+                discount: input.price.discount,
+                forSale: input.forSale,
+                public: input.public,
+                uploaderId: context.user.id,
+                ownerId: context.user.id,
+            }))
+        })
+        return images;
     },
     uploadImagesFromFile: (_parent, args, context, info) => {
-
+        // TODO: implement
     },
 }
 
 const UserMutations: UserMutationsResolvers = {
     login: (_parent, args, context, info) => {
-
+        // TODO: implement
+        return db.user.findUnique({where:{username: args.input.username}});
     },
     register: (_parent, args, context, info) => {
-
+        // TODO: implement
+        console.log({...args})
+        return db.user.create({data:{ ...args.input }});
     },
 }
 
@@ -103,5 +148,5 @@ export const resolvers = {
     Image: ImageType,
     Query,
     Mutation,
-    Ownership,
+    ImageOwnership,
 }

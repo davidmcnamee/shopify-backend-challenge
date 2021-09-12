@@ -5,22 +5,32 @@
   "author": "David McNamee <d@vidmcnam.ee>",
   "license": "MIT",
   "scripts": {
-    "generate": "prisma generate && graphql-codegen"
+    "generate": "prisma generate && graphql-codegen",
+    "dev": "ts-node-dev src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity": "^3.31.0",
+    "@aws-sdk/client-s3": "^3.31.0",
+    "@aws-sdk/credential-provider-cognito-identity": "^3.31.0",
     "@prisma/client": "3.0.2",
     "apollo-server": "^3.3.0",
     "graphql": "^15.5.3",
     "image-hash": "^4.0.1",
-    "ts-custom-error": "^3.2.0"
+    "lodash": "^4.17.21",
+    "ts-custom-error": "^3.2.0",
+    "unique-names-generator": "^4.6.0"
   },
   "devDependencies": {
     "@graphql-codegen/add": "^3.1.0",
     "@graphql-codegen/cli": "^2.2.0",
     "@graphql-codegen/typescript": "^2.2.2",
     "@graphql-codegen/typescript-resolvers": "^2.2.1",
+    "@types/lodash": "^4.14.172",
     "@types/node": "^16.9.1",
     "prisma": "3.0.2",
+    "ts-node-dev": "^1.1.8",
     "typescript": "^4.4.3"
   }
 }

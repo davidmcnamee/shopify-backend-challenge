@@ -122,14 +122,17 @@ export type SearchInput = {
 
 export type UpdateImageInput = {
   forSale?: Maybe<Scalars['Boolean']>;
+  id: Scalars['ID'];
   price?: Maybe<Price>;
   public?: Maybe<Scalars['Boolean']>;
+  title?: Maybe<Scalars['String']>;
 };
 
 export type UploadImageInput = {
   forSale: Scalars['Boolean'];
   price?: Maybe<Price>;
   public: Scalars['Boolean'];
+  title?: Maybe<Scalars['String']>;
   url: Scalars['String'];
 };
 
