@@ -2,8 +2,9 @@ import { assert } from 'chai';
 import { httpServerPromise } from '../src/server';
 import request from 'supertest';
 import { db } from '../src/db';
+import { Server } from 'http';
 
-let app = null;
+let app: Server | null = null;
 before(async () => app = await httpServerPromise);
 beforeEach(() => Promise.all([db.user.deleteMany(), db.image.deleteMany()]));
 
@@ -49,7 +50,7 @@ describe('users', function() {
                   email
                 }
               }
-            }        
+            }
           `,
           variables: {
             input: { username: "david2", email: "david@email.com", password: "password2" },
@@ -59,6 +60,7 @@ describe('users', function() {
     })
   });
   describe('login()', function() {
+    this.timeout(10000);
     it('should work normally', async function() {
       await createTestUser();
       const response = await request(app)

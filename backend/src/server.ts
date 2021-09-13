@@ -9,14 +9,15 @@ import cookieSession from 'cookie-session';
 import { GraphQLLocalStrategy, buildContext } from "graphql-passport";
 import passport from 'passport';
 import { db } from './db';
-import { AthenticationError } from './types/exceptions';
+import { AthenticationError, UnexpectedError } from './types/exceptions';
 import { User } from '.prisma/client';
+import bcrypt from 'bcryptjs';
 const readFile = promisify(originalReadFile);
 
 passport.use(
-  new GraphQLLocalStrategy({passReqToCallback:true},async (_req, username, password, done) => {
-    const user = await db.user.findFirst({ where: { username, password } });
-    if(!user) done(new AthenticationError(403, 'Invalid username or password'), null);
+  new GraphQLLocalStrategy({passReqToCallback:true},async (_req, username:string, password:string, done) => {
+    const user = await db.user.findFirst({ where: { username, password: await bcrypt.hash(password, 10) } });
+    if(!user) done(new AthenticationError(401, 'Invalid username or password'), null);
     else done(null, user);
   })
 );
@@ -27,7 +28,7 @@ passport.serializeUser(function(user, done) {
 
 passport.deserializeUser(async function(id:string, done) {
   const user = await db.user.findUnique({where:{id}});
-  if(!user) done(new AthenticationError(403, 'Invalid username or password'), null);
+  if(!user) done(new UnexpectedError('Could not deserialize session data'), null);
   else done(null, user);
 });
 

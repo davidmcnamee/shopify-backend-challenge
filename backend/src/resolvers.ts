@@ -6,10 +6,10 @@ import { ClientError } from './types/exceptions';
 import { CustomContextType } from './types/static';
 import { ImageMutationsPurchaseImageArgs, ImageMutationsUpdateImageArgs, ImageMutationsUploadImageArgs, ImageMutationsUploadImagesArgs, ImageMutationsUploadImagesFromFileArgs, ImageOwnershipResolvers, ImageResolvers, Mutation, MutationResolvers, Query, QueryResolvers, User, UserMutations, UserMutationsLoginArgs, UserMutationsRegisterArgs, UserMutationsResolvers, UserResolvers } from './types/types';
 import { assertIsCorrectUser, assertUserExists } from './validators';
+import bcrypt from 'bcryptjs';
 
 const User: UserResolvers<CustomContextType, DbUser> = {
     email: async (parent, _args, context) => {
-        await context.authenticate("graphql-local");
         assertIsCorrectUser(context.getUser(), parent.id);
         return parent.email;
     },
@@ -131,16 +131,17 @@ const UserMutations = {
     login: async (args:UserMutationsLoginArgs, context:CustomContextType) => {
         const { user, info } = await context.authenticate("graphql-local", {
             email: args.input.username,
-            password: args.input.password,
+            password: await bcrypt.hash(args.input.password, 10),
         });
         await context.login(user);
         return user;
     },
     register: async (args:UserMutationsRegisterArgs, context:CustomContextType) => {
+        const passwordHash = await bcrypt.hash(args.input.password, 10);
         const user = await db.user.create({data:{
             username: args.input.username,
             email: args.input.email,
-            password: args.input.password,
+            password: passwordHash,
         }});
         await context.login(user);
         return user;
