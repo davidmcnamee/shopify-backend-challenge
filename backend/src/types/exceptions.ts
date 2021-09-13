@@ -17,3 +17,4 @@ export class UnexpectedError extends SystemError {
 }
 export class ClientError extends SystemError {}
 export class AuthorizationError extends ClientError {}
+export class AthenticationError extends ClientError {}

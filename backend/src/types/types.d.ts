@@ -87,6 +87,12 @@ export type Price = {
   discount: Scalars['Int'];
 };
 
+export type PriceInput = {
+  amount: Scalars['Int'];
+  currency: Scalars['String'];
+  discount: Scalars['Int'];
+};
+
 export type PurchaseImageInput = {
   imageID: Scalars['ID'];
   price: Scalars['Int'];
@@ -123,14 +129,14 @@ export type SearchInput = {
 export type UpdateImageInput = {
   forSale?: Maybe<Scalars['Boolean']>;
   id: Scalars['ID'];
-  price?: Maybe<Price>;
+  price?: Maybe<PriceInput>;
   public?: Maybe<Scalars['Boolean']>;
   title?: Maybe<Scalars['String']>;
 };
 
 export type UploadImageInput = {
   forSale: Scalars['Boolean'];
-  price?: Maybe<Price>;
+  price?: Maybe<PriceInput>;
   public: Scalars['Boolean'];
   title?: Maybe<Scalars['String']>;
   url: Scalars['String'];
@@ -232,6 +238,7 @@ export type ResolversTypes = {
   Mutation: ResolverTypeWrapper<{}>;
   Object: ResolversTypes['Image'] | ResolversTypes['User'];
   Price: ResolverTypeWrapper<Price>;
+  PriceInput: PriceInput;
   PurchaseImageInput: PurchaseImageInput;
   Query: ResolverTypeWrapper<{}>;
   RegisterInput: RegisterInput;
@@ -255,6 +262,7 @@ export type ResolversParentTypes = {
   Mutation: {};
   Object: ResolversParentTypes['Image'] | ResolversParentTypes['User'];
   Price: Price;
+  PriceInput: PriceInput;
   PurchaseImageInput: PurchaseImageInput;
   Query: {};
   RegisterInput: RegisterInput;

@@ -10,6 +10,7 @@ generator client {
 model User {
   id             String  @id @default(cuid())
   username       String  @unique
+  password       String
   email          String
   uploadedImages Image[] @relation(name: "UploadedImages")
   ownedImages    Image[] @relation(name: "OwnedImages")

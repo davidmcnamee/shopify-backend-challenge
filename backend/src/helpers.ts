@@ -1,4 +1,6 @@
+import { User } from '.prisma/client';
 import { imageHash as originalImageHash } from 'image-hash';
+import { userInfo } from 'os';
 import { uniqueNamesGenerator, colors, adjectives, animals } from 'unique-names-generator';
 import { promisify } from 'util';
 
@@ -12,4 +14,8 @@ export async function computeHash(url: string): Promise<string> {
 
 export function generateImageName() {
     return uniqueNamesGenerator({ dictionaries: [colors, adjectives, animals], style: 'lowerCase', seed: SEED, separator: '-' });
+}
+
+export function serializeUser(user: User) {
+    return {id:user.id, username: user.username, email: user.email}
 }

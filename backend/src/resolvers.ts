@@ -4,16 +4,17 @@ import { db } from './db';
 import { computeHash, generateImageName } from './helpers';
 import { ClientError } from './types/exceptions';
 import { CustomContextType } from './types/static';
-import { ImageMutationsResolvers, ImageOwnershipResolvers, ImageResolvers, Mutation, MutationResolvers, Query, QueryResolvers, User, UserMutationsResolvers, UserResolvers } from './types/types';
+import { ImageMutationsPurchaseImageArgs, ImageMutationsUpdateImageArgs, ImageMutationsUploadImageArgs, ImageMutationsUploadImagesArgs, ImageMutationsUploadImagesFromFileArgs, ImageOwnershipResolvers, ImageResolvers, Mutation, MutationResolvers, Query, QueryResolvers, User, UserMutations, UserMutationsLoginArgs, UserMutationsRegisterArgs, UserMutationsResolvers, UserResolvers } from './types/types';
 import { assertIsCorrectUser, assertUserExists } from './validators';
 
 const User: UserResolvers<CustomContextType, DbUser> = {
-    email: (parent, _args, context) => {
-        assertIsCorrectUser(context.user, parent.id);
+    email: async (parent, _args, context) => {
+        await context.authenticate("graphql-local");
+        assertIsCorrectUser(context.getUser(), parent.id);
         return parent.email;
     },
     inventory: async (parent, args, context, info) => {
-        const isCurrentUser = context.user.id === parent.id;
+        const isCurrentUser = context.getUser().id === parent.id;
         return db.image.findMany({where: {
             ownerId: parent.id,
             public: !isCurrentUser ? true : undefined
@@ -36,7 +37,7 @@ const ImageOwnership: ImageOwnershipResolvers<CustomContextType, DbImage> = {
 };
 
 function publicOrOwned(context: CustomContextType) {
-    return {OR: [{ public: true }, context.user && { ownerId: context.user.id }]}
+    return {OR: [{ public: true }, context.getUser() && { ownerId: context.getUser().id }]}
 }
 
 const Query: QueryResolvers<CustomContextType> = {
@@ -60,12 +61,12 @@ const Query: QueryResolvers<CustomContextType> = {
     }
 }
 
-const ImageMutations: ImageMutationsResolvers<CustomContextType> = {
-    purchaseImage: async (_parent, args, context, info) => {
+const ImageMutations = {
+    purchaseImage: async (args:ImageMutationsPurchaseImageArgs, context:CustomContextType) => {
         
         return true
     },
-    updateImage: async (_parent, args, context, info) => {
+    updateImage: async (args:ImageMutationsUpdateImageArgs, context:CustomContextType) => {
         const { forSale, price, public: isPublic, title, id } = args.input;
         const image = await db.image.update({
             where: { id },
@@ -80,7 +81,7 @@ const ImageMutations: ImageMutationsResolvers<CustomContextType> = {
         })
         return image;
     },
-    uploadImage: async (_parent, args, context, info) => {
+    uploadImage: async (args:ImageMutationsUploadImageArgs, context:CustomContextType) => {
         const hash = await computeHash(args.input.url);
         const duplicateImage = db.image.findFirst({where: { hash }});
         if(duplicateImage) throw new ClientError(400, "Cannot reupload a duplicate image.");
@@ -94,14 +95,14 @@ const ImageMutations: ImageMutationsResolvers<CustomContextType> = {
                 discount: args.input.price.discount,
                 forSale: args.input.forSale,
                 public: args.input.public,
-                uploaderId: context.user.id,
-                ownerId: context.user.id,
+                uploaderId: context.getUser().id,
+                ownerId: context.getUser().id,
             },
         });
         return image;
     },
-    uploadImages: async (_parent, args, context, info) => {
-        assertUserExists(context.user);
+    uploadImages: async (args:ImageMutationsUploadImagesArgs, context:CustomContextType) => {
+        assertUserExists(context.getUser());
         const imageHashes = await Promise.all(args.input.map(input => computeHash(input.url)));
         const duplicateImage = db.image.findFirst({where: { hash: { in: imageHashes } }})
         if(duplicateImage) throw new ClientError(400, "Cannot reupload a duplicate image.");
@@ -115,30 +116,38 @@ const ImageMutations: ImageMutationsResolvers<CustomContextType> = {
                 discount: input.price.discount,
                 forSale: input.forSale,
                 public: input.public,
-                uploaderId: context.user.id,
-                ownerId: context.user.id,
+                uploaderId: context.getUser().id,
+                ownerId: context.getUser().id,
             }))
         })
         return images;
     },
-    uploadImagesFromFile: (_parent, args, context, info) => {
+    uploadImagesFromFile: (args:ImageMutationsUploadImagesFromFileArgs, context:CustomContextType) => {
         // TODO: implement
     },
 }
 
-const UserMutations: UserMutationsResolvers = {
-    login: (_parent, args, context, info) => {
-        // TODO: implement
-        return db.user.findUnique({where:{username: args.input.username}});
+const UserMutations = {
+    login: async (args:UserMutationsLoginArgs, context:CustomContextType) => {
+        const { user, info } = await context.authenticate("graphql-local", {
+            email: args.input.username,
+            password: args.input.password,
+        });
+        await context.login(user);
+        return user;
     },
-    register: (_parent, args, context, info) => {
-        // TODO: implement
-        console.log({...args})
-        return db.user.create({data:{ ...args.input }});
+    register: async (args:UserMutationsRegisterArgs, context:CustomContextType) => {
+        const user = await db.user.create({data:{
+            username: args.input.username,
+            email: args.input.email,
+            password: args.input.password,
+        }});
+        await context.login(user);
+        return user;
     },
 }
 
-const Mutation: MutationResolvers<CustomContextType, undefined> = {
+const Mutation: MutationResolvers<CustomContextType> = {
     images: () => ImageMutations,
     users: () => UserMutations,
 }
@@ -147,6 +156,6 @@ export const resolvers = {
     User,
     Image: ImageType,
     Query,
-    Mutation,
     ImageOwnership,
+    Mutation
 }
