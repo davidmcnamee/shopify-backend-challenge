@@ -3,7 +3,7 @@
 import {gql, useMutation} from "@apollo/client";
 import {useRouter} from "next/router";
 import {FormEvent, useCallback, useState} from "react";
-import { client } from "./util/apollo";
+import {client} from "../util/apollo";
 
 const REGISTER_MUTATION = gql`
     mutation Register($input: RegisterInput!) {
@@ -27,7 +27,7 @@ const Register = () => {
     const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const response = await register();
-        client.refetchQueries({include: ['RootQuery']});
+        client.refetchQueries({include: ["HeaderQuery"]});
         if (!response.errors) router.push("/");
     }, []);
 

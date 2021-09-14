@@ -1,7 +1,6 @@
 /** @format */
 
 import React, {Dispatch, FC, SetStateAction, useCallback, useState} from "react";
-import ReactDOM from "react-dom";
 import {
     Button,
     Caption,
@@ -86,18 +85,12 @@ const MyImages = () => {
                 <div>
                     <button onClick={() => setModalOpen(true)}>Upload</button>
                 </div>
+                <UploadImageModal
+                    modalOpen={modalOpen}
+                    setModalOpen={setModalOpen}
+                />
                 <div>{/* grid view */}</div>
             </div>
-            {globalThis.document &&
-                ReactDOM.createPortal(
-                    <div>
-                        <UploadImageModal
-                            modalOpen={modalOpen}
-                            setModalOpen={setModalOpen}
-                        />
-                    </div>,
-                    document.body,
-                )}
         </>
     );
 };
