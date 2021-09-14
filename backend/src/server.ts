@@ -14,6 +14,7 @@ import {db} from "./db";
 import {createError} from "./types/external-errors";
 import {User} from ".prisma/client";
 import bcrypt from "bcryptjs";
+import cors from "cors";
 const readFile = promisify(originalReadFile);
 
 passport.use(
@@ -42,6 +43,7 @@ passport.deserializeUser(async function (id: string, done) {
 async function main() {
     const typeDefs = await readFile("./src/schema.graphql", "utf-8");
     const app = express();
+    app.use(cors({ origin: 'http://localhost:3000', credentials: true, methods: ['GET', 'POST'] }));
     const httpServer = http.createServer(app);
     app.use(cookieSession({secret: process.env.SESSION_SECRET}));
     app.use(passport.initialize());
@@ -57,7 +59,7 @@ async function main() {
         plugins: [ApolloServerPluginDrainHttpServer({httpServer})],
     });
     await server.start();
-    server.applyMiddleware({app, path: "/graphql"});
+    server.applyMiddleware({app, path: "/graphql", cors: false});
 
     await new Promise(resolve =>
         httpServer.listen({port: 4000}, resolve as () => void),

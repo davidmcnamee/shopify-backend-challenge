@@ -83,6 +83,7 @@ type Query {
     images: [Image!]! # TODO: pagination if I have time
     get(id: ID!): Object!
     imageUploadUrls(fileExtensions: [String!]!): [UploadUrl!]!
+    me: User
 }
 
 type ImageMutations {

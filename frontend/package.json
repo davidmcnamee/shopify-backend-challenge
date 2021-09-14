@@ -3,9 +3,13 @@
   "scripts": {
     "dev": "next",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "format": "prettier --write '**/*.{tsx,ts}'"
   },
   "dependencies": {
+    "@apollo/client": "^3.4.11",
+    "@shopify/polaris": "^6.6.0",
+    "graphql": "^15.5.3",
     "next": "latest",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
@@ -18,6 +22,7 @@
     "@types/react-dom": "17.0.3",
     "@types/styled-components": "5.1.9",
     "babel-plugin-styled-components": "^1.12.0",
+    "prettier": "^2.4.0",
     "typescript": "4.2.4"
   }
 }

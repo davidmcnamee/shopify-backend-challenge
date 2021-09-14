@@ -133,6 +133,9 @@ const Query: QueryResolvers<CustomContextType> = {
             key,
         }));
     },
+    me: (_parent, args, context) => {
+        return context.getUser();
+    }
 };
 
 const ImageMutations = {

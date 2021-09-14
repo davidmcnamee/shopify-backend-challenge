@@ -9,7 +9,8 @@
     "dev": "ts-node-dev src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "mocha -r ts-node/register 'tests/**/*.ts' -r mocha-suppress-logs"
+    "test": "mocha -r ts-node/register 'tests/**/*.ts' -r mocha-suppress-logs",
+    "format": "prettier --write '**/*.ts'"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity": "^3.31.0",
@@ -22,6 +23,7 @@
     "aws-sdk": "^2.988.0",
     "bcryptjs": "^2.4.3",
     "cookie-session": "^1.4.0",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "graphql": "^15.5.3",
     "graphql-passport": "^0.6.3",
@@ -29,6 +31,7 @@
     "lodash": "^4.17.21",
     "passport": "^0.4.1",
     "passport-google-oauth20": "^2.0.0",
+    "stripe": "^8.174.0",
     "ts-custom-error": "^3.2.0",
     "unique-names-generator": "^4.6.0",
     "uuid": "^8.3.2"
