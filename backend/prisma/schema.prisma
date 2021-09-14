@@ -21,9 +21,9 @@ model Image {
   hash       String  @unique
   url        String  @unique
   title      String
-  amount     Int
-  currency   String
-  discount   Int
+  amount     Int?
+  currency   String?
+  discount   Int?
   forSale    Boolean
   public     Boolean
   uploaderId String

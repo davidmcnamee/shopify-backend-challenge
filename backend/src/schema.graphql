@@ -71,16 +71,22 @@ input RegisterInput {
     email: String!
 }
 
+type UploadUrl {
+    signedUrl: String!
+    key: String!
+}
+
 union Object = Image | User
 
 type Query {
     search(query: String): [Image!]!
     images: [Image!]! # TODO: pagination if I have time
     get(id: ID!): Object!
+    imageUploadUrls(fileExtensions: [String!]!): [UploadUrl!]!
 }
 
 type ImageMutations {
-    purchaseImage(input: PurchaseImageInput!): Boolean!
+    purchaseImage(input: PurchaseImageInput!): Image!
     updateImage(input: UpdateImageInput!): Image!
     uploadImage(input: UploadImageInput!): Image!
     uploadImages(input: [UploadImageInput!]!): [Image!]!

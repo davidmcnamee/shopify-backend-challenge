@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Image" ALTER COLUMN "amount" DROP NOT NULL,
+ALTER COLUMN "currency" DROP NOT NULL,
+ALTER COLUMN "discount" DROP NOT NULL;

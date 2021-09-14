@@ -1,47 +1,25 @@
-import { assert } from 'chai';
-import { httpServerPromise } from '../src/server';
-import request from 'supertest';
-import { db } from '../src/db';
-import { Server } from 'http';
+/** @format */
+
+import {assert} from "chai";
+import {httpServerPromise} from "../src/server";
+import request from "supertest";
+import {Server} from "http";
+import {clearDb, createTestUser} from "./util";
 
 let app: Server | null = null;
-before(async () => app = await httpServerPromise);
-beforeEach(() => Promise.all([db.user.deleteMany(), db.image.deleteMany()]));
+before(async () => (app = await httpServerPromise));
+beforeEach(() => clearDb("User"));
 
-async function createTestUser() {
-  const response = await request(app)
-    .post('/graphql')
-    .send({
-      query: `
-        mutation RegisterNewUser($input: RegisterInput!) {
-          users {
-            register(input: $input) {
-              id
-              username
-              email
-            }
-          }
-        }        
-      `,
-      variables: {
-        input: { username: "david", email: "david@email.com", password: "password" },
-      }
-    });
-  assert.equal(response.status, 200);
-  assert.equal(response.body.data.users.register.username, "david");
-  assert.equal(response.body.data.users.register.email, "david@email.com");
-}
-
-describe('users', function() {
-  this.timeout(5000);
-  describe('register()', function() {
-    it('should create a user when run normally', createTestUser);
-    it('should fail when the provided email already exists', async () => {
-      await createTestUser();
-      const response = await request(app)
-        .post('/graphql')
-        .send({
-          query: `
+describe("users", function () {
+    this.timeout(5000);
+    describe("register()", function () {
+        it("should create a user when run normally", () => createTestUser(app));
+        it("should fail when the provided email already exists", async () => {
+            await createTestUser(app);
+            const response = await request(app)
+                .post("/graphql")
+                .send({
+                    query: `
             mutation RegisterNewUser($input: RegisterInput!) {
               users {
                 register(input: $input) {
@@ -52,21 +30,28 @@ describe('users', function() {
               }
             }
           `,
-          variables: {
-            input: { username: "david2", email: "david@email.com", password: "password2" },
-          }
+                    variables: {
+                        input: {
+                            username: "david",
+                            email: "david2@email.com",
+                            password: "password2",
+                        },
+                    },
+                });
+            assert.equal(
+                response.body.errors[0].extensions.code,
+                "DUPLICATE_USERNAME",
+            );
         });
-      assert.equal(response.statusCode, 401);
-    })
-  });
-  describe('login()', function() {
-    this.timeout(10000);
-    it('should work normally', async function() {
-      await createTestUser();
-      const response = await request(app)
-        .post('/graphql')
-        .send({
-          query: `
+    });
+    describe("login()", function () {
+        this.timeout(10000);
+        it("should work normally", async function () {
+            await createTestUser(app);
+            const response = await request(app)
+                .post("/graphql")
+                .send({
+                    query: `
             mutation UserLogin($input: LoginInput!) {
               users {
                 login(input: $input) {
@@ -77,15 +62,15 @@ describe('users', function() {
               }
             }        
           `,
-          variables: {
-            input: { username: "david", password: "password" },
-          }
+                    variables: {
+                        input: {username: "david", password: "password"},
+                    },
+                });
+            assert.equal(response.status, 200);
+            assert.equal(response.body.data.users.login.username, "david");
+            assert.equal(response.body.data.users.login.email, "david@email.com");
         });
-      assert.equal(response.status, 200);
-      assert.equal(response.body.data.users.login.username, "david");
-      assert.equal(response.body.data.users.login.email, "david@email.com");
     });
-  });
 });
 
 after(async () => app.close());
