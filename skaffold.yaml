@@ -1,0 +1,21 @@
+apiVersion: skaffold/v2beta22
+kind: Config
+metadata:
+  name: shopify-challenges
+build:
+  artifacts:
+  - image: davidmc1/backend-image
+    context: backend
+    docker:
+      dockerfile: Dockerfile
+  - image: davidmc1/frontend-image
+    context: frontend
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - k8s/backend.yaml
+    - k8s/frontend.yaml
+    - k8s/secrets.yaml
+    - k8s/ingress.yaml

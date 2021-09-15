@@ -2,8 +2,8 @@
 
 import {gql, useQuery} from "@apollo/client";
 import {TopBar} from "@shopify/polaris";
-import React, {FC, useReducer} from "react";
-import SearchField from "./search-field";
+import React, {FC, useReducer, useState} from "react";
+import {useSearch} from "./search-field";
 
 const HEADER_QUERY = gql`
     query HeaderQuery {
@@ -16,10 +16,30 @@ const HEADER_QUERY = gql`
 
 export const Header = () => {
     const {loading, error, data} = useQuery(HEADER_QUERY);
+    const {
+        searchValue,
+        setSearchValue,
+        searchVisible,
+        setSearchVisible,
+        searchResults,
+    } = useSearch();
     if (error) console.error(error);
+
     return (
         <TopBar
-            searchField={<SearchField />}
+            searchField={
+                <TopBar.SearchField
+                    value={searchValue}
+                    onChange={setSearchValue}
+                    onFocus={() => setSearchVisible(true)}
+                    onCancel={() => setSearchVisible(false)}
+                    onBlur={() => setSearchVisible(false)}
+                    placeholder="search"
+                />
+            }
+            searchResultsVisible={searchVisible}
+            onSearchResultsDismiss={() => setSearchVisible(false)}
+            searchResults={searchResults}
             userMenu={<UserMenu username={data?.me?.username} />}
         />
     );

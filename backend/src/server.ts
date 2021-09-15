@@ -43,8 +43,15 @@ passport.deserializeUser(async function (id: string, done) {
 async function main() {
     const typeDefs = await readFile("./src/schema.graphql", "utf-8");
     const app = express();
-    app.use(cors({ origin: 'http://localhost:3000', credentials: true, methods: ['GET', 'POST'] }));
+    app.use(
+        cors({
+            origin: process.env.FRONTEND_ORIGIN,
+            credentials: true,
+            methods: ["GET", "POST"],
+        }),
+    );
     const httpServer = http.createServer(app);
+    app.get("/", (req, res) => res.sendStatus(200)); // healthcheck
     app.use(cookieSession({secret: process.env.SESSION_SECRET}));
     app.use(passport.initialize());
     app.use(passport.session());

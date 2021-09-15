@@ -1,0 +1,7 @@
+node_modules
+.vscode
+tests
+.env
+.prettierrc.json
+dist
+**/*.log
