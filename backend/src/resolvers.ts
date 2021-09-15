@@ -1,6 +1,6 @@
 /** @format */
 
-import {Image as DbImage, Prisma, User as DbUser} from ".prisma/client";
+import {Image as DbImage, Image, Prisma, User as DbUser} from ".prisma/client";
 import {zip} from "lodash";
 import {db, s3} from "./db";
 import {generateImageName} from "./util";
@@ -15,6 +15,7 @@ import {
     ImageResolvers,
     Mutation,
     MutationResolvers,
+    ObjectResolvers,
     Query,
     QueryResolvers,
     User,
@@ -82,16 +83,33 @@ function publicOrOwned(context: CustomContextType) {
     };
 }
 
+const ObjectType: ObjectResolvers<CustomContextType> = {
+    __resolveType: (parent, context, info) => {
+        if ((parent as any).url) {
+            return "Image";
+        }
+        return "User";
+    },
+};
+
 const Query: QueryResolvers<CustomContextType> = {
     search: async (_parent, args, context, info) => {
         const matchingImages = db.image.findMany({
             where: {
-                title: {contains: args.query},
+                OR: {
+                    title: {contains: args.query},
+                    id: {contains: args.query},
+                },
                 ...publicOrOwned(context),
             },
         });
         const matchingUsers = db.user.findMany({
-            where: {username: {contains: args.query}},
+            where: {
+                OR: {
+                    username: {contains: args.query},
+                    id: {contains: args.query},
+                },
+            },
         });
         const [images, users] = await Promise.all([matchingImages, matchingUsers]);
         return [...images, ...users];
@@ -135,7 +153,7 @@ const Query: QueryResolvers<CustomContextType> = {
     },
     me: (_parent, args, context) => {
         return context.getUser();
-    }
+    },
 };
 
 const ImageMutations = {
@@ -268,4 +286,5 @@ export const resolvers = {
     Query,
     ImageOwnership,
     Mutation,
+    Object: ObjectType,
 };

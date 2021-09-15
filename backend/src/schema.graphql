@@ -79,7 +79,7 @@ type UploadUrl {
 union Object = Image | User
 
 type Query {
-    search(query: String): [Image!]!
+    search(query: String): [Object!]!
     images: [Image!]! # TODO: pagination if I have time
     get(id: ID!): Object!
     imageUploadUrls(fileExtensions: [String!]!): [UploadUrl!]!

@@ -12,6 +12,11 @@ build:
     context: frontend
     docker:
       dockerfile: Dockerfile
+    # sync:
+    #   manual:
+    #     - src: "frontend/**"
+    #       dest: .
+    #       strip: frontend
 deploy:
   kubectl:
     manifests:

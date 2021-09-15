@@ -24,19 +24,22 @@ const SEARCH_QUERY = gql`
 export function useSearch() {
     const [value, setValue] = useState("");
     const [isVisible, setVisible] = useState(false);
-    const {loading, error, data, refetch} = useQuery(SEARCH_QUERY, {
-        variables: {query: value},
-    });
+    // const stuff = useQuery(SEARCH_QUERY, {variables: {query: "david"}});
+    // console.log(stuff);
+    const {loading, error, data, refetch} = {} as any; //useQuery(SEARCH_QUERY, {
+    //     variables: {query: value},
+    // });
     // const refetchDebounced = useCallback(debounce(refetch,400), []);
     console.log(value, isVisible, data, loading, error);
     useEffect(() => {
-        refetch();
+        // refetch();
     }, [value]);
 
     const results = (
         <ActionList
             items={
                 !loading &&
+                data &&
                 data.search.map((item: any) =>
                     item.__typename === "Image"
                         ? {

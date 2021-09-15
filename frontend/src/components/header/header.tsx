@@ -24,6 +24,7 @@ export const Header = () => {
         searchResults,
     } = useSearch();
     if (error) console.error(error);
+    console.log('rerending header');
 
     return (
         <TopBar
