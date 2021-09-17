@@ -31,12 +31,14 @@ passport.use(
 );
 
 passport.serializeUser(function (user, done) {
+    console.log("serializing ", user, (user as User).id);
     done(null, (user as User).id);
 });
 
 passport.deserializeUser(async function (id: string, done) {
     const user = await db.user.findUnique({where: {id}});
-    if (!user) done(createError("UNEXPECTED_ERROR"), null);
+    console.log("deserializing ", id, user);
+    if (!user) done(null, null);
     else done(null, user);
 });
 

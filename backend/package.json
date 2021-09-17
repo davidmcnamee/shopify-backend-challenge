@@ -7,7 +7,7 @@
   "scripts": {
     "generate": "prisma generate && graphql-codegen",
     "dev": "ts-node-dev src/server.ts",
-    "build": "tsc",
+    "build": "tsc --project tsconfig.production.json",
     "start": "node dist/server.js",
     "test": "mocha -r ts-node/register 'tests/**/*.ts' -r mocha-suppress-logs",
     "format": "prettier --write '**/*.ts'"

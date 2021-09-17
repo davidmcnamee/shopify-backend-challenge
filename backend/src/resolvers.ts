@@ -112,6 +112,7 @@ const Query: QueryResolvers<CustomContextType> = {
             },
         });
         const [images, users] = await Promise.all([matchingImages, matchingUsers]);
+        console.log(args.query, images, users);
         return [...images, ...users];
     },
     images: (_parent, args, context, info) => {
@@ -151,7 +152,7 @@ const Query: QueryResolvers<CustomContextType> = {
             key,
         }));
     },
-    me: (_parent, args, context) => {
+    me: async (_parent, args, context) => {
         return context.getUser();
     },
 };
@@ -220,20 +221,23 @@ const ImageMutations = {
         const imageHashes = await assertImagesUnique(
             args.input.map(input => input.url),
         );
-        const images = await db.image.createMany({
-            data: zip(args.input, imageHashes).map(([input, hash]) => ({
-                hash: hash,
-                url: input.url,
-                title: input.title || generateImageName(),
-                amount: input.price.amount,
-                currency: input.price.currency,
-                discount: input.price.discount,
-                forSale: input.forSale,
-                public: input.public,
-                uploaderId: context.getUser().id,
-                ownerId: context.getUser().id,
-            })),
-        });
+        const [, images] = await db.$transaction([
+            db.image.createMany({
+                data: zip(args.input, imageHashes).map(([input, hash]) => ({
+                    hash: hash,
+                    url: input.url,
+                    title: input.title || generateImageName(),
+                    amount: input.price?.amount,
+                    currency: input.price?.currency,
+                    discount: input.price?.discount,
+                    forSale: input.forSale,
+                    public: input.public,
+                    uploaderId: context.getUser().id,
+                    ownerId: context.getUser().id,
+                })),
+            }),
+            db.image.findMany({where: {hash: {in: imageHashes}}}),
+        ]);
         return images;
     },
     uploadImagesFromFile: (

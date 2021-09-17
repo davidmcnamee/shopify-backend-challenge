@@ -1,8 +1,19 @@
 /** @format */
 
 import {gql, useMutation} from "@apollo/client";
+import {
+    Button,
+    Card,
+    Form,
+    FormLayout,
+    Layout,
+    Page,
+    TextField,
+} from "@shopify/polaris";
 import {useRouter} from "next/router";
-import {FormEvent, useCallback, useState} from "react";
+import React, {useCallback, useState} from "react";
+import {handleError} from "../components/message/error-handler";
+import {useMessage} from "../components/message/message";
 import {client} from "../util/apollo";
 
 const LOGIN_MUTATION = gql`
@@ -16,43 +27,116 @@ const LOGIN_MUTATION = gql`
     }
 `;
 
+const REGISTER_MUTATION = gql`
+    mutation Register($input: RegisterInput!) {
+        users {
+            register(input: $input) {
+                id
+                username
+            }
+        }
+    }
+`;
+
 const Login = () => {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    const showMessage = useMessage();
+    const [loginUsername, setLoginUsername] = useState("");
+    const [loginPassword, setLoginPassword] = useState("");
+    const [registerUsername, setRegisterUsername] = useState("");
+    const [registerPassword, setRegisterPassword] = useState("");
+    const [email, setEmail] = useState("");
     const [login] = useMutation(LOGIN_MUTATION, {
-        variables: {input: {username, password}},
+        variables: {input: {username: loginUsername, password: loginPassword}},
+    });
+    const [register] = useMutation(REGISTER_MUTATION, {
+        variables: {
+            input: {username: registerUsername, password: registerPassword, email},
+        },
     });
     const router = useRouter();
-    const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const response = await login();
-        client.refetchQueries({include: ["HeaderQuery"]});
-        if (!response.errors) router.push("/");
+    const handleLogin = useCallback(async () => {
+        try {
+            const response = await login();
+            const username = response.data.users.login.username;
+            client.reFetchObservableQueries();
+            showMessage(`Welcome back, ${username}!`, "success");
+            if (!response.errors) router.push("/");
+        } catch (err) {
+            handleError(
+                err,
+                showMessage,
+                "Something went wrong while logging you in, please try again later.",
+            );
+        }
+    }, []);
+    const handleRegisterSubmit = useCallback(async () => {
+        try {
+            const response = await register();
+            const username = response.data.users.register.username;
+            client.reFetchObservableQueries();
+            showMessage(`Welcome, ${username}!`, "success");
+            if (!response.errors) router.push("/");
+        } catch (err) {
+            handleError(
+                err,
+                showMessage,
+                "Something went wrong while registering, please try again later.",
+            );
+        }
     }, []);
 
     return (
-        <div>
-            <h1>Login</h1>
-            <form onSubmit={handleSubmit}>
-                <label>Username:</label>
-                <br />
-                <input
-                    type="text"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                />
-                <br />
-                <label>Password:</label>
-                <br />
-                <input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                />
-                <br />
-                <button type="submit">Login</button>
-            </form>
-        </div>
+        <Page title="Login or Register">
+            <Layout>
+                <Layout.Section oneHalf>
+                    <Card title="Login" sectioned>
+                        <Form onSubmit={handleLogin}>
+                            <FormLayout>
+                                <TextField
+                                    label="Username"
+                                    value={loginUsername}
+                                    onChange={setLoginUsername}
+                                />
+                                <TextField
+                                    label="Password"
+                                    value={loginPassword}
+                                    onChange={setLoginPassword}
+                                    type="password"
+                                />
+                                <Button onClick={handleLogin}>Login</Button>
+                            </FormLayout>
+                        </Form>
+                    </Card>
+                </Layout.Section>
+                <Layout.Section oneHalf>
+                    <Card title="Register" sectioned>
+                        <Form onSubmit={handleRegisterSubmit}>
+                            <FormLayout>
+                                <TextField
+                                    label="Email"
+                                    value={email}
+                                    onChange={setEmail}
+                                />
+                                <TextField
+                                    label="Username"
+                                    value={registerUsername}
+                                    onChange={setRegisterUsername}
+                                />
+                                <TextField
+                                    label="Password"
+                                    value={registerPassword}
+                                    onChange={setRegisterPassword}
+                                    type="password"
+                                />
+                                <Button onClick={handleRegisterSubmit}>
+                                    Register
+                                </Button>
+                            </FormLayout>
+                        </Form>
+                    </Card>
+                </Layout.Section>
+            </Layout>
+        </Page>
     );
 };
 

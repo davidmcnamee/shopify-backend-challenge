@@ -1,9 +1,9 @@
 /** @format */
 
 import {gql, useQuery} from "@apollo/client";
-import {ActionList, Spinner} from "@shopify/polaris";
-import React, {useCallback, useEffect, useState} from "react";
+import {ActionList} from "@shopify/polaris";
 import {debounce} from "lodash";
+import React, {useEffect, useRef, useState} from "react";
 
 const SEARCH_QUERY = gql`
     query SearchQuery($query: String!) {
@@ -23,16 +23,16 @@ const SEARCH_QUERY = gql`
 
 export function useSearch() {
     const [value, setValue] = useState("");
+    const [debouncedValue, setDebouncedValue] = useState("");
     const [isVisible, setVisible] = useState(false);
-    // const stuff = useQuery(SEARCH_QUERY, {variables: {query: "david"}});
-    // console.log(stuff);
-    const {loading, error, data, refetch} = {} as any; //useQuery(SEARCH_QUERY, {
-    //     variables: {query: value},
-    // });
-    // const refetchDebounced = useCallback(debounce(refetch,400), []);
-    console.log(value, isVisible, data, loading, error);
+    const {loading, error, data} = useQuery(SEARCH_QUERY, {
+        variables: {query: debouncedValue},
+        skip: !debouncedValue,
+    });
+    console.log("VALUE IS: ", value, debouncedValue);
+    const setDebounced = useRef(debounce(setDebouncedValue, 500));
     useEffect(() => {
-        // refetch();
+        setDebounced.current(value);
     }, [value]);
 
     const results = (

@@ -8,9 +8,13 @@ import {client} from "../util/apollo";
 import {AppProvider, Frame} from "@shopify/polaris";
 import enTranslations from "@shopify/polaris/locales/en.json";
 import {Header} from "../components/header/header";
-import {FrameExample} from "../components/frame-example";
+import {
+    useMessageProvider,
+    Container as MsgContainer,
+} from "../components/message/message";
 
 function MyApp({Component, pageProps}: AppProps) {
+    const [MsgProvider, messages, addMessage] = useMessageProvider();
     const theme = {
         logo: {
             width: 124,
@@ -23,11 +27,13 @@ function MyApp({Component, pageProps}: AppProps) {
     return (
         <ApolloProvider client={client}>
             <AppProvider i18n={enTranslations} theme={theme}>
-                <Frame topBar={<Header />}>
-                    <Component {...pageProps} />
-                </Frame>
+                <MsgProvider value={addMessage}>
+                    <Frame topBar={<Header />}>
+                        <Component {...pageProps} />
+                    </Frame>
+                    <MsgContainer messages={messages} />
+                </MsgProvider>
             </AppProvider>
-            {/* <FrameExample /> */}
         </ApolloProvider>
     );
 }

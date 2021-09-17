@@ -1,17 +1,15 @@
 /** @format */
 
 import {gql, useQuery} from "@apollo/client";
-import {Button, Page} from "@shopify/polaris";
-import {PagePlusMajor, PlusMinor} from "@shopify/polaris-icons";
+import {Page} from "@shopify/polaris";
 import React, {useState} from "react";
-import styled from "styled-components";
 import {FilterSortControls, UploadControls} from "../components/grid-view/controls";
 import {GridView} from "../components/grid-view/grid-view";
-import {useMessage} from "../components/message/message";
+import {UploadImageModal} from "../components/modals/upload-modal";
 import {Split} from "../components/util/split";
 
-const INDEX_PAGE = gql`
-    query IndexPage {
+const MY_IMAGES_QUERY = gql`
+    query MyImages {
         images {
             id
             url
@@ -19,11 +17,11 @@ const INDEX_PAGE = gql`
     }
 `;
 
-export default function Home() {
-    const queryData = useQuery(INDEX_PAGE);
+const MyImages = () => {
+    const queryData = useQuery(MY_IMAGES_QUERY);
 
     return (
-        <Page title="Home">
+        <Page title="My Memes">
             <Split>
                 <FilterSortControls />
                 <UploadControls />
@@ -31,4 +29,6 @@ export default function Home() {
             <GridView {...queryData} />
         </Page>
     );
-}
+};
+
+export default MyImages;
