@@ -20,6 +20,8 @@ export type Image = {
   forSale: Scalars['Boolean'];
   hash: Scalars['String'];
   id: Scalars['ID'];
+  likedByMe: Scalars['Boolean'];
+  likes: Scalars['Int'];
   ownership: ImageOwnership;
   price?: Maybe<Price>;
   public: Scalars['Boolean'];
@@ -29,7 +31,9 @@ export type Image = {
 
 export type ImageMutations = {
   __typename?: 'ImageMutations';
+  like: Image;
   purchaseImage: Image;
+  unlike: Image;
   updateImage: Image;
   uploadImage: Image;
   uploadImages: Array<Image>;
@@ -37,8 +41,18 @@ export type ImageMutations = {
 };
 
 
+export type ImageMutationsLikeArgs = {
+  id: Scalars['ID'];
+};
+
+
 export type ImageMutationsPurchaseImageArgs = {
   input: PurchaseImageInput;
+};
+
+
+export type ImageMutationsUnlikeArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -104,7 +118,7 @@ export type Query = {
   imageUploadUrls: Array<UploadUrl>;
   images: Array<Image>;
   me?: Maybe<User>;
-  search: Array<Image>;
+  search: Array<Object>;
 };
 
 
@@ -293,6 +307,8 @@ export type ImageResolvers<ContextType = CustomContextType, ParentType = Resolve
   forSale?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   hash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  likedByMe?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  likes?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   ownership?: Resolver<ResolversTypes['ImageOwnership'], ParentType, ContextType>;
   price?: Resolver<Maybe<ResolversTypes['Price']>, ParentType, ContextType>;
   public?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -302,7 +318,9 @@ export type ImageResolvers<ContextType = CustomContextType, ParentType = Resolve
 };
 
 export type ImageMutationsResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['ImageMutations']> = {
+  like?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsLikeArgs, 'id'>>;
   purchaseImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsPurchaseImageArgs, 'input'>>;
+  unlike?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUnlikeArgs, 'id'>>;
   updateImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUpdateImageArgs, 'input'>>;
   uploadImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUploadImageArgs, 'input'>>;
   uploadImages?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<ImageMutationsUploadImagesArgs, 'input'>>;
@@ -337,7 +355,7 @@ export type QueryResolvers<ContextType = CustomContextType, ParentType = Resolve
   imageUploadUrls?: Resolver<Array<ResolversTypes['UploadUrl']>, ParentType, ContextType, RequireFields<QueryImageUploadUrlsArgs, 'fileExtensions'>>;
   images?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
-  search?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<QuerySearchArgs, never>>;
+  search?: Resolver<Array<ResolversTypes['Object']>, ParentType, ContextType, RequireFields<QuerySearchArgs, never>>;
 };
 
 export type UploadUrlResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['UploadUrl']> = {

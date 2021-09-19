@@ -14,6 +14,7 @@ model User {
   email          String
   uploadedImages Image[] @relation(name: "UploadedImages")
   ownedImages    Image[] @relation(name: "OwnedImages")
+  likes          Likes[]
 }
 
 model Image {
@@ -30,4 +31,14 @@ model Image {
   ownerId    String
   uploader   User    @relation(name: "UploadedImages", fields: [uploaderId], references: [id])
   owner      User    @relation(name: "OwnedImages", fields: [ownerId], references: [id])
+  likes      Likes[]
+}
+
+model Likes {
+  userId  String
+  imageId String
+  image   Image  @relation(fields: [imageId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@id([userId, imageId])
 }

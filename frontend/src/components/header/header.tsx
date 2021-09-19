@@ -3,6 +3,8 @@
 import {gql, useQuery} from "@apollo/client";
 import {TopBar} from "@shopify/polaris";
 import React, {FC, useReducer, useState} from "react";
+import { handleError } from "../message/error-handler";
+import { useMessage } from "../message/message";
 import {useSearch} from "./search-field";
 
 const HEADER_QUERY = gql`
@@ -23,8 +25,8 @@ export const Header = () => {
         setSearchVisible,
         searchResults,
     } = useSearch();
-    if (error) console.error(error);
-    console.log('rerending header');
+    const showMessage = useMessage();
+    if (error) handleError(error, showMessage, "An error occurred while connecting to the server.");
 
     return (
         <TopBar

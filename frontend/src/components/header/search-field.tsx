@@ -3,7 +3,7 @@
 import {gql, useQuery} from "@apollo/client";
 import {ActionList} from "@shopify/polaris";
 import {debounce} from "lodash";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 
 const SEARCH_QUERY = gql`
     query SearchQuery($query: String!) {
@@ -29,10 +29,9 @@ export function useSearch() {
         variables: {query: debouncedValue},
         skip: !debouncedValue,
     });
-    console.log("VALUE IS: ", value, debouncedValue);
-    const setDebounced = useRef(debounce(setDebouncedValue, 500));
+    const setDebounced = useMemo(() => debounce(setDebouncedValue, 500), []);
     useEffect(() => {
-        setDebounced.current(value);
+        setDebounced(value);
     }, [value]);
 
     const results = (

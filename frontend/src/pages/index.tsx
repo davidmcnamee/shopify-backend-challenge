@@ -15,6 +15,10 @@ const INDEX_PAGE = gql`
         images {
             id
             url
+            uploader {
+                id
+            }
+            likedByMe
         }
     }
 `;

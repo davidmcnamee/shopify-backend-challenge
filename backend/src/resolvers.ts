@@ -6,7 +6,9 @@ import {db, s3} from "./db";
 import {generateImageName} from "./util";
 import {CustomContextType} from "./types/static";
 import {
+    ImageMutationsLikeArgs,
     ImageMutationsPurchaseImageArgs,
+    ImageMutationsUnlikeArgs,
     ImageMutationsUpdateImageArgs,
     ImageMutationsUploadImageArgs,
     ImageMutationsUploadImagesArgs,
@@ -65,6 +67,25 @@ const ImageType: ImageResolvers<CustomContextType, DbImage> = {
             Key: parent.url,
         });
         return getSignedUrl(s3, command, {expiresIn: 5});
+    },
+    likes: parent => {
+        return db.likes.count({
+            where: {
+                imageId: parent.id,
+            },
+        });
+    },
+    likedByMe: async (parent, _args, context) => {
+        if (!context.getUser()) return false;
+        const like = await db.likes.findUnique({
+            where: {
+                userId_imageId: {
+                    imageId: parent.id,
+                    userId: context.getUser().id,
+                },
+            },
+        });
+        return !!like;
     },
 };
 
@@ -245,6 +266,28 @@ const ImageMutations = {
         context: CustomContextType,
     ) => {
         // TODO: implement
+    },
+    like: async (args: ImageMutationsLikeArgs, context: CustomContextType) => {
+        assertUserExists(context.getUser());
+        await db.likes.create({
+            data: {
+                imageId: args.id,
+                userId: context.getUser().id,
+            },
+        });
+        return true;
+    },
+    unlike: async (args: ImageMutationsUnlikeArgs, context: CustomContextType) => {
+        assertUserExists(context.getUser());
+        await db.likes.delete({
+            where: {
+                userId_imageId: {
+                    imageId: args.id,
+                    userId: context.getUser().id,
+                },
+            },
+        });
+        return true;
     },
 };
 

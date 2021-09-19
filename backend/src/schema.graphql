@@ -32,6 +32,8 @@ type Image {
     price: Price
     forSale: Boolean!
     public: Boolean!
+    likes: Int!
+    likedByMe: Boolean!
 }
 
 input SearchInput {
@@ -92,6 +94,8 @@ type ImageMutations {
     uploadImage(input: UploadImageInput!): Image!
     uploadImages(input: [UploadImageInput!]!): [Image!]!
     uploadImagesFromFile(url: String!): ID! # TODO: endpoints to check status of job
+    like(id: ID!): Boolean!
+    unlike(id: ID!): Boolean!
 }
 
 type UserMutations {
