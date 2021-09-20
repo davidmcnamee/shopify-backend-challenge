@@ -4,6 +4,9 @@ type User {
     username: String!
     email: String!
     inventory: [Image!]!
+    # True if the user has been set up to
+    # accept payments on their account
+    acceptingPayments: Boolean!
 }
 
 type Price {

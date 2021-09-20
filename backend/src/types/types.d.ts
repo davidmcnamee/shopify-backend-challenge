@@ -31,9 +31,9 @@ export type Image = {
 
 export type ImageMutations = {
   __typename?: 'ImageMutations';
-  like: Image;
+  like: Scalars['Boolean'];
   purchaseImage: Image;
-  unlike: Image;
+  unlike: Scalars['Boolean'];
   updateImage: Image;
   uploadImage: Image;
   uploadImages: Array<Image>;
@@ -171,6 +171,7 @@ export type UploadUrl = {
 
 export type User = {
   __typename?: 'User';
+  acceptingPayments: Scalars['Boolean'];
   email: Scalars['String'];
   id: Scalars['ID'];
   inventory: Array<Image>;
@@ -318,9 +319,9 @@ export type ImageResolvers<ContextType = CustomContextType, ParentType = Resolve
 };
 
 export type ImageMutationsResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['ImageMutations']> = {
-  like?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsLikeArgs, 'id'>>;
+  like?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<ImageMutationsLikeArgs, 'id'>>;
   purchaseImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsPurchaseImageArgs, 'input'>>;
-  unlike?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUnlikeArgs, 'id'>>;
+  unlike?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<ImageMutationsUnlikeArgs, 'id'>>;
   updateImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUpdateImageArgs, 'input'>>;
   uploadImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUploadImageArgs, 'input'>>;
   uploadImages?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<ImageMutationsUploadImagesArgs, 'input'>>;
@@ -365,6 +366,7 @@ export type UploadUrlResolvers<ContextType = CustomContextType, ParentType = Res
 };
 
 export type UserResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['User']> = {
+  acceptingPayments?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   inventory?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType>;

@@ -15,23 +15,42 @@ model User {
   uploadedImages Image[] @relation(name: "UploadedImages")
   ownedImages    Image[] @relation(name: "OwnedImages")
   likes          Likes[]
+  uploadJobs     UploadJob[]
+  followers      Following[] @relation(name: "Followers")
+  following      Following[] @relation(name: "Followees")
+  amount      Int?
+  currency    String?
+  discount    Int?
+  stripeAccountId String?
+}
+
+model Following {
+  followerId String
+  followeeId String
+  follower  User @relation(name: "Followees", fields: [followerId], references: [id])
+  followee  User @relation(name: "Followers", fields: [followeeId], references: [id])
+  paid      Boolean // whether the follower has paid to see the followee's private memes
+  @@id([followerId, followeeId])
 }
 
 model Image {
-  id         String  @id @default(cuid())
-  hash       String  @unique
-  url        String  @unique
-  title      String
-  amount     Int?
-  currency   String?
-  discount   Int?
-  forSale    Boolean
-  public     Boolean
-  uploaderId String
-  ownerId    String
-  uploader   User    @relation(name: "UploadedImages", fields: [uploaderId], references: [id])
-  owner      User    @relation(name: "OwnedImages", fields: [ownerId], references: [id])
-  likes      Likes[]
+  id          String    @id @default(cuid())
+  hash        String    @unique
+  url         String    @unique
+  title       String
+  amount      Int?
+  currency    String?
+  discount    Int?
+  forSale     Boolean
+  public      Boolean
+  
+  uploaderId  String
+  ownerId     String
+  uploadJobId String?
+  uploader    User      @relation(name: "UploadedImages", fields: [uploaderId], references: [id])
+  owner       User      @relation(name: "OwnedImages", fields: [ownerId], references: [id])
+  likes       Likes[]
+  uploadJob   UploadJob? @relation(fields: [uploadJobId], references: [id])
 }
 
 model Likes {
@@ -39,6 +58,22 @@ model Likes {
   imageId String
   image   Image  @relation(fields: [imageId], references: [id])
   user    User   @relation(fields: [userId], references: [id])
-
   @@id([userId, imageId])
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+}
+
+model UploadJob {
+  id                String  @id
+  status            JobStatus
+  errors            Json @default("[]")
+  successCount      Int @default(0)
+  errorCount        Int @default(0)
+  creatorId         String
+  creator           User  @relation(fields: [creatorId], references: [id])
+  successfulUploads Image[]
 }

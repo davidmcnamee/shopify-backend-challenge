@@ -3,11 +3,14 @@
 import {Image as DbImage, Image, Prisma, User as DbUser} from ".prisma/client";
 import {zip} from "lodash";
 import {db, s3} from "./db";
-import {generateImageName} from "./util";
+import {completeUploadJobAsync, generateImageName} from "./util";
 import {CustomContextType} from "./types/static";
+import dataproc from "@google-cloud/dataproc";
+import {Storage} from "@google-cloud/storage";
 import {
     ImageMutationsLikeArgs,
     ImageMutationsPurchaseImageArgs,
+    ImageMutationsResolvers,
     ImageMutationsUnlikeArgs,
     ImageMutationsUpdateImageArgs,
     ImageMutationsUploadImageArgs,
@@ -41,6 +44,23 @@ import {S3Client, GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
 import {v4 as uuidv4} from "uuid";
 import {PrismaClientKnownRequestError} from "@prisma/client/runtime";
 import {createError} from "./types/external-errors";
+import type {google} from "@google-cloud/dataproc/build/protos/protos";
+import {Stripe} from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2020-08-27",
+});
+
+type IJobMetadata = google.cloud.dataproc.v1.IJobMetadata;
+
+const clusterClient = new dataproc.v1.ClusterControllerClient({
+    apiEndpoint: `${process.env.GCP_REGION}-dataproc.googleapis.com`,
+    projectId: process.env.GCP_PROJECT_ID,
+});
+const jobClient = new dataproc.v1.JobControllerClient({
+    apiEndpoint: `${process.env.GCP_REGION}-dataproc.googleapis.com`,
+    projectId: process.env.GCP_PROJECT_ID,
+});
 
 const User: UserResolvers<CustomContextType, DbUser> = {
     email: async (parent, _args, context) => {
@@ -55,6 +75,13 @@ const User: UserResolvers<CustomContextType, DbUser> = {
                 public: !isCurrentUser ? true : undefined,
             },
         });
+    },
+    acceptingPayments: async (parent, _args, context) => {
+        assertCorrectUser(context.getUser(), parent.id);
+        if(!parent.stripeAccountId) return false;
+        const stripeAccount = await stripe.accounts.retrieve(parent.stripeAccountId);
+        if(stripeAccount.details_submitted) return true;
+        return false;
     },
 };
 
@@ -261,11 +288,41 @@ const ImageMutations = {
         ]);
         return images;
     },
-    uploadImagesFromFile: (
+    uploadImagesFromFile: async (
         args: ImageMutationsUploadImagesFromFileArgs,
         context: CustomContextType,
     ) => {
-        // TODO: implement
+        assertUserExists(context.getUser());
+        const [cluster] = await clusterClient.getCluster({
+            clusterName: process.env.DATAPROC_CLUSTER_NAME,
+            projectId: process.env.GCP_PROJECT_ID,
+            region: process.env.GCP_REGION,
+        });
+        const gcsScript = `gs://${process.env.GCS_BUCKET_NAME}/bulk-upload.py`;
+        const job: google.cloud.dataproc.v1.ISubmitJobRequest = {
+            projectId: process.env.GCP_PROJECT_ID,
+            region: process.env.GCP_REGION,
+            job: {
+                placement: {
+                    clusterName: cluster.clusterName,
+                },
+                pysparkJob: {
+                    mainPythonFileUri: gcsScript,
+                    args: [args.url],
+                    properties: {
+                        "spark.executorEnv.AWS_ACCESS_KEY_ID":
+                            process.env.AWS_ACCESS_KEY_ID,
+                        "spark.executorEnv.AWS_SECRET_ACCESS_KEY":
+                            process.env.AWS_SECRET_ACCESS_KEY,
+                    },
+                },
+            },
+        };
+        const [jobOperation] = await jobClient.submitJobAsOperation(job);
+        const {jobId} = jobOperation.metadata as IJobMetadata;
+
+        completeUploadJobAsync(jobOperation, context.getUser());
+        return jobOperation.name;
     },
     like: async (args: ImageMutationsLikeArgs, context: CustomContextType) => {
         assertUserExists(context.getUser());
@@ -319,6 +376,27 @@ const UserMutations = {
             if (e instanceof PrismaClientKnownRequestError && e.code === "P2002")
                 throw createError("DUPLICATE_USERNAME");
         }
+    },
+    createStripeAccount: async (_args: never, context: CustomContextType) => {
+        const user = context.getUser();
+        assertUserExists(user);
+        let stripeAccount: Stripe.Account = null;
+        if (user.stripeAccountId)
+            stripeAccount = await stripe.accounts.retrieve(user.stripeAccountId);
+        else {
+            stripeAccount = await stripe.accounts.create({type: "express"});
+            await db.user.update({
+                where: {id: user.id},
+                data: {stripeAccountId: stripeAccount.id},
+            });
+        }
+        const accountLinks = await stripe.accountLinks.create({
+            account: stripeAccount.id,
+            refresh_url: `${process.env.FRONTEND_ORIGIN}/settings`,
+            return_url: `${process.env.FRONTEND_ORIGIN}/settings`,
+            type: "account_onboarding",
+        });
+        return accountLinks.url;
     },
 };
 

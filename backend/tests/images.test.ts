@@ -65,8 +65,24 @@ describe("image", function () {
         it("should work normally", () => {});
     });
     describe("uploadImagesFromFile()", function () {
-        it("should work normally", () => {
-            // TODO
+        this.timeout(10 * 60 * 1000); // 10 minutes
+        it("should work normally", async () => {
+            const {userResponse} = await createTestUser(app);
+            const cookies = userResponse.headers["set-cookie"];
+            const jobResponse = await request(app)
+                .post("/graphql")
+                .set("Cookie", cookies)
+                .send({
+                    query: `
+                        mutation UploadImagesFromFile {
+                            images{
+                                uploadImagesFromFile(url: "https://storage.googleapis.com/shopifychallengedata/test-bulk-upload.csv")
+                            }
+                        }
+                    `,
+                });
+            console.log("received response");
+            assert.equal(5, 6); // to show console.logs
         });
     });
 });

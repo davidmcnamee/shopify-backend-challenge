@@ -2,6 +2,7 @@
 
 import {ApolloServer} from "apollo-server-express";
 import {ApolloServerPluginDrainHttpServer} from "apollo-server-core";
+import {ApolloServerPluginLandingPageGraphQLPlayground} from "apollo-server-core";
 import {readFile as originalReadFile} from "fs";
 import {resolvers} from "./resolvers";
 import http from "http";
@@ -65,7 +66,10 @@ async function main() {
             console.error(JSON.stringify(err));
             return err;
         },
-        plugins: [ApolloServerPluginDrainHttpServer({httpServer})],
+        plugins: [
+            ApolloServerPluginDrainHttpServer({httpServer}),
+            ApolloServerPluginLandingPageGraphQLPlayground({}),
+        ],
     });
     await server.start();
     server.applyMiddleware({app, path: "/graphql", cors: false});
