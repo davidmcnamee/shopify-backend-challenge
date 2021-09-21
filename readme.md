@@ -7,9 +7,9 @@
 
 This is my personal take on the challenge to create an image repository. This is a web application that allows content creators to upload, share, and monetize their memes. Users who have created an account can upload memes to their page, and follow the pages of other users. If desired, users can become a premium follower by paying a one-time fee to the user who they'd like to follow, giving them access to privately posted memes from that user.
 
-Users who are looking to build a following can set their price from the profile page. They can also set a price for individual memes, such that other users can purchase ownership of a popular meme.
+Users who are looking to build a following can set their price from the profile page. They can also set a price for individual memes, such that other users can purchase ownership of a popular meme (*WIP*).
 
-Images are unique throughout the platform (using perceptual hashing libraries), and image files are only distributed with temporary s3 signed urls, incentivising fresh content rather than copied memes.
+Images are unique throughout the platform (using perceptual hashing libraries), and image files are only distributed with expiring s3 signed urls, incentivising fresh content rather than copied memes.
 
 ## User Guide / Screenshots
 
