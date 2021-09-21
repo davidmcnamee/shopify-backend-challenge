@@ -45,6 +45,6 @@ Currently the provisioned infrastructure includes:
 
 * While the bulk upload mutation works and tests pass (under `/backend/tests/images.test.ts`), there's still no page on the UI to access it.
 * Tests are incomplete across many queries/mutations since there are a lot of them. Some of the core operations (upload image, login, register, etc.) are handled in `/backend/tests`, but not all of them.
-* Pagination isn't working properly on the frontend, so users may see a new page of images "swap out" the existing page.
+* Pagination isn't working properly on the frontend, so users may see the new page of images "swap out" the existing page.
 * Users can't buy ownership of images, so the prices on images are pointless at the moment.
 
