@@ -9,7 +9,7 @@ This is my personal take on the challenge to create an image repository. This is
 
 Users who are looking to build a following can set their price from the profile page. They can also set a price for individual memes, such that other users can purchase ownership of a popular meme (*image purchases are still a work-in-progress*).
 
-Images are unique throughout the platform (using perceptual hashing libraries), and image files are only distributed with expiring s3 signed urls, incentivising fresh content rather than copied memes.
+Images are unique throughout the platform (using "blockhash" perceptual hashing libraries), and image files are only distributed with expiring s3 signed urls, incentivising fresh content rather than copied memes.
 
 ## User Guide / Screenshots
 
