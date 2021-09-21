@@ -6,9 +6,9 @@
 **Backend developer challenge for Shopify internship application (Winter 2022) by David McNamee**
 
 * [Intro](#intro)
-* [User Guide / Screenshots](#user-guide-screenshots)
+* [User Guide / Screenshots](#user-guide--screenshots)
 * [Technology Used](#technology-used)
-* [Improvements / Todo](#improvements-todo)
+* [Improvements / Todo](#improvements--todo)
 
 ## Intro
 
