@@ -8,10 +8,9 @@ import {CustomContextType} from "./types/static";
 import dataproc from "@google-cloud/dataproc";
 import {Storage} from "@google-cloud/storage";
 import {
-    ImageMutationsLikeArgs,
     ImageMutationsPurchaseImageArgs,
     ImageMutationsResolvers,
-    ImageMutationsUnlikeArgs,
+    ImageMutationsSetLikeArgs,
     ImageMutationsUpdateImageArgs,
     ImageMutationsUploadImageArgs,
     ImageMutationsUploadImagesArgs,
@@ -78,16 +77,24 @@ const User: UserResolvers<CustomContextType, DbUser> = {
     },
     acceptingPayments: async (parent, _args, context) => {
         assertCorrectUser(context.getUser(), parent.id);
-        if(!parent.stripeAccountId) return false;
+        if (!parent.stripeAccountId) return false;
         const stripeAccount = await stripe.accounts.retrieve(parent.stripeAccountId);
-        if(stripeAccount.details_submitted) return true;
+        if (stripeAccount.details_submitted) return true;
         return false;
     },
 };
 
 const ImageType: ImageResolvers<CustomContextType, DbImage> = {
     ownership: parent => parent,
-    price: parent => parent,
+    price: parent => {
+        if (
+            parent.currency &&
+            parent.currency !== undefined &&
+            parent.discount !== undefined
+        )
+            return parent;
+        return null;
+    },
     url: async parent => {
         const command = new GetObjectCommand({
             Bucket: process.env.S3_BUCKET_NAME,
@@ -142,32 +149,52 @@ const ObjectType: ObjectResolvers<CustomContextType> = {
 
 const Query: QueryResolvers<CustomContextType> = {
     search: async (_parent, args, context, info) => {
+        console.log("SEARCH QUERY: ", args.query);
         const matchingImages = db.image.findMany({
             where: {
-                OR: {
-                    title: {contains: args.query},
-                    id: {contains: args.query},
-                },
+                title: {contains: args.query, mode: "insensitive"},
+                // OR: [
+                //     {title: {contains: args.query, mode: "insensitive"}},
+                //     {id: {contains: args.query, mode: "insensitive"}},
+                // ],
                 ...publicOrOwned(context),
             },
         });
         const matchingUsers = db.user.findMany({
             where: {
-                OR: {
-                    username: {contains: args.query},
-                    id: {contains: args.query},
-                },
+                OR: [
+                    {username: {contains: args.query}},
+                    {id: {contains: args.query}},
+                ],
             },
         });
         const [images, users] = await Promise.all([matchingImages, matchingUsers]);
+        console.log("MATCHING USERS AND IMAGES: ", users, images);
         console.log(args.query, images, users);
         return [...images, ...users];
     },
     images: (_parent, args, context, info) => {
-        return db.image.findMany();
+        const {sort, limit, offset, ascending, userFilter} = args.query;
+        const direction = ascending ? "asc" : "desc";
+        const orderBy = (
+            {
+                PRICE: {amount: direction},
+                LIKES: {likes: {_count: direction}},
+                UPLOAD_DATE: {createdAt: direction},
+            } as const
+        )[sort];
+        return db.image.findMany({
+            orderBy,
+            skip: offset,
+            take: limit,
+            where: {
+                ...publicOrOwned(context),
+                ownerId: userFilter,
+            },
+        });
     },
     get: async (_parent, args, context, info) => {
-        const matchingImage = db.image.findUnique({
+        const matchingImage = db.image.findFirst({
             where: {id: args.id, ...publicOrOwned(context)},
         });
         const matchingUser = db.user.findUnique({where: {id: args.id}});
@@ -192,7 +219,7 @@ const Query: QueryResolvers<CustomContextType> = {
                 Bucket: process.env.S3_BUCKET_NAME,
                 Key: key,
             });
-            promises.push(getSignedUrl(s3, command, {expiresIn: 5}));
+            promises.push(getSignedUrl(s3, command, {expiresIn: 5 * 60}));
             keys.push(key);
         }
         return zip(await Promise.all(promises), keys).map(([signedUrl, key]) => ({
@@ -224,17 +251,19 @@ const ImageMutations = {
         context: CustomContextType,
     ) => {
         const {forSale, price, public: isPublic, title, id} = args.input;
+        if (forSale && !price) throw createError("FOR_SALE_IMAGE_MUST_HAVE_PRICE");
         assertUserExists(context.getUser());
-        assertCorrectUser(context.getUser(), id);
-        const image = await db.image.update({
+        let image = await db.image.findUnique({where: {id}});
+        assertCorrectUser(context.getUser(), image.ownerId);
+        image = await db.image.update({
             where: {id},
             data: {
                 forSale,
                 title,
                 public: isPublic,
-                amount: price.amount,
-                currency: price.currency,
-                discount: price.discount,
+                amount: price?.amount,
+                currency: price?.currency,
+                discount: price?.discount,
             },
         });
         return image;
@@ -324,27 +353,25 @@ const ImageMutations = {
         completeUploadJobAsync(jobOperation, context.getUser());
         return jobOperation.name;
     },
-    like: async (args: ImageMutationsLikeArgs, context: CustomContextType) => {
+    setLike: async (args: ImageMutationsSetLikeArgs, context: CustomContextType) => {
         assertUserExists(context.getUser());
-        await db.likes.create({
-            data: {
-                imageId: args.id,
-                userId: context.getUser().id,
-            },
-        });
-        return true;
-    },
-    unlike: async (args: ImageMutationsUnlikeArgs, context: CustomContextType) => {
-        assertUserExists(context.getUser());
-        await db.likes.delete({
-            where: {
-                userId_imageId: {
+        if (args.like)
+            await db.likes.create({
+                data: {
                     imageId: args.id,
                     userId: context.getUser().id,
                 },
-            },
-        });
-        return true;
+            });
+        else
+            await db.likes.delete({
+                where: {
+                    userId_imageId: {
+                        imageId: args.id,
+                        userId: context.getUser().id,
+                    },
+                },
+            });
+        return db.image.findUnique({where: {id: args.id}});
     },
 };
 

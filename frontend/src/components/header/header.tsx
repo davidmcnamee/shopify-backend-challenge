@@ -27,16 +27,17 @@ export const Header = () => {
     } = useSearch();
     const showMessage = useMessage();
     if (error) handleError(error, showMessage, "An error occurred while connecting to the server.");
+    function onSearchChange(text: string) {
+        setSearchValue(text);
+        setSearchVisible(text.length > 0);
+    }
 
     return (
         <TopBar
             searchField={
                 <TopBar.SearchField
                     value={searchValue}
-                    onChange={setSearchValue}
-                    onFocus={() => setSearchVisible(true)}
-                    onCancel={() => setSearchVisible(false)}
-                    onBlur={() => setSearchVisible(false)}
+                    onChange={onSearchChange}
                     placeholder="search"
                 />
             }

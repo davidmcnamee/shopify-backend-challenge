@@ -2,18 +2,20 @@
 
 import {gql, useQuery} from "@apollo/client";
 import {Button} from "@shopify/polaris";
-import {PlusMinor} from "@shopify/polaris-icons";
+import {PlusMinor, SortMinor} from "@shopify/polaris-icons";
 import {useRouter} from "next/router";
-import React, {useState} from "react";
+import React, {FC, useState} from "react";
 import styled from "styled-components";
-import {useMessage} from "../message/message";
+import {SortModal, SortProps} from "../modals/sort-modal";
 import {UploadImageModal} from "../modals/upload-modal";
 
-export const FilterSortControls = () => {
-    const showMessage = useMessage();
+type Props = SortProps;
+
+export const FilterSortControls: FC<Props> = props => {
+    const [modalOpen, setModalOpen] = useState(false);
     return (
         <FilterSortContainer>
-            <Button
+            {/* <Button
                 onClick={() =>
                     showMessage(
                         "that functionality doesn't exist yet, sorry 😞",
@@ -23,18 +25,15 @@ export const FilterSortControls = () => {
                 icon={PlusMinor}
             >
                 Filter
-            </Button>
-            <Button
-                onClick={() =>
-                    showMessage(
-                        "that functionality doesn't exist yet, sorry 😞",
-                        "error",
-                    )
-                }
-                icon={PlusMinor}
-            >
+            </Button> */}
+            <Button onClick={() => setModalOpen(true)} icon={SortMinor}>
                 Sort
             </Button>
+            <SortModal
+                {...props}
+                modalOpen={modalOpen}
+                setModalOpen={setModalOpen}
+            />
         </FilterSortContainer>
     );
 };

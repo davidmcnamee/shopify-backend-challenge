@@ -124,29 +124,32 @@ export function FrameExample() {
     );
   
     const searchResultsMarkup = (
-      <ActionList
-        items={[{content: 'Shopify help center'}, {content: 'Community forums'}]}
-      />
+        <ActionList
+            items={[
+                {content: "Shopify help center", url: "/test"},
+                {content: "Community forums"},
+            ]}
+        />
     );
-  
+
     const searchFieldMarkup = (
-      <TopBar.SearchField
-        onChange={handleSearchFieldChange}
-        value={searchValue}
-        placeholder="Search"
-      />
+        <TopBar.SearchField
+            onChange={handleSearchFieldChange}
+            value={searchValue}
+            placeholder="Search"
+        />
     );
-  
+
     const topBarMarkup = (
-      <TopBar
-        showNavigationToggle
-        userMenu={userMenuMarkup}
-        searchResultsVisible={searchActive}
-        searchField={searchFieldMarkup}
-        searchResults={searchResultsMarkup}
-        onSearchResultsDismiss={handleSearchResultsDismiss}
-        onNavigationToggle={toggleMobileNavigationActive}
-      />
+        <TopBar
+            // showNavigationToggle
+            userMenu={userMenuMarkup}
+            searchResultsVisible={searchActive}
+            searchField={searchFieldMarkup}
+            searchResults={searchResultsMarkup}
+            onSearchResultsDismiss={handleSearchResultsDismiss}
+            onNavigationToggle={toggleMobileNavigationActive}
+        />
     );
   
     const navigationMarkup = (

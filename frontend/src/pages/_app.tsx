@@ -12,6 +12,7 @@ import {
     useMessageProvider,
     Container as MsgContainer,
 } from "../components/message/message";
+import {FrameExample} from "../components/frame-example";
 
 function MyApp({Component, pageProps}: AppProps) {
     const [MsgProvider, messages, addMessage] = useMessageProvider();
@@ -31,6 +32,7 @@ function MyApp({Component, pageProps}: AppProps) {
                     <Frame topBar={<Header />}>
                         <Component {...pageProps} />
                     </Frame>
+                    {/* <FrameExample /> */}
                     <MsgContainer messages={messages} />
                 </MsgProvider>
             </AppProvider>

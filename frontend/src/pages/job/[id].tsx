@@ -2,10 +2,9 @@
 
 import {Page} from "@shopify/polaris";
 import React from "react";
-import {FrameExample} from "../components/frame-example";
 
-const BulkUpload = () => {
+const JobPage = () => {
     return <div>coming soon</div>;
 };
 
-export default BulkUpload;
+export default JobPage;

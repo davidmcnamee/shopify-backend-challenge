@@ -39,6 +39,27 @@ type Image {
     likedByMe: Boolean!
 }
 
+type Error {
+    input: String!
+    message: String!
+}
+
+enum JobStatus {
+    PENDING
+    RUNNING
+    COMPLETED
+}
+
+type Job {
+    id: ID!
+    status: JobStatus!
+    errors: [Error!]!
+    successCount: Int!
+    errorCount: Int!
+    creator: User!
+    successfulUploads: [Image!]!
+}
+
 input SearchInput {
     imageUrl: String
     textQuery: String
@@ -81,11 +102,25 @@ type UploadUrl {
     key: String!
 }
 
+enum SortField {
+    PRICE
+    LIKES
+    UPLOAD_DATE
+}
+
+input ImageQuery {
+    sort: SortField!
+    ascending: Boolean!
+    offset: Int!
+    limit: Int!
+    userFilter: ID
+}
+
 union Object = Image | User
 
 type Query {
     search(query: String): [Object!]!
-    images: [Image!]! # TODO: pagination if I have time
+    images(query: ImageQuery!): [Image!]!
     get(id: ID!): Object!
     imageUploadUrls(fileExtensions: [String!]!): [UploadUrl!]!
     me: User
@@ -96,9 +131,8 @@ type ImageMutations {
     updateImage(input: UpdateImageInput!): Image!
     uploadImage(input: UploadImageInput!): Image!
     uploadImages(input: [UploadImageInput!]!): [Image!]!
-    uploadImagesFromFile(url: String!): ID! # TODO: endpoints to check status of job
-    like(id: ID!): Boolean!
-    unlike(id: ID!): Boolean!
+    uploadImagesFromFile(url: String!): Job!
+    setLike(id: ID!, like: Boolean!): Image
 }
 
 type UserMutations {

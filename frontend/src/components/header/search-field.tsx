@@ -1,8 +1,9 @@
 /** @format */
 
 import {gql, useQuery} from "@apollo/client";
-import {ActionList} from "@shopify/polaris";
+import {ActionList, ActionListItemDescriptor} from "@shopify/polaris";
 import {debounce} from "lodash";
+import {useRouter} from "next/router";
 import React, {useEffect, useMemo, useRef, useState} from "react";
 
 const SEARCH_QUERY = gql`
@@ -24,10 +25,12 @@ const SEARCH_QUERY = gql`
 export function useSearch() {
     const [value, setValue] = useState("");
     const [debouncedValue, setDebouncedValue] = useState("");
+    const router = useRouter();
     const [isVisible, setVisible] = useState(false);
     const {loading, error, data} = useQuery(SEARCH_QUERY, {
         variables: {query: debouncedValue},
         skip: !debouncedValue,
+        fetchPolicy: "no-cache",
     });
     const setDebounced = useMemo(() => debounce(setDebouncedValue, 500), []);
     useEffect(() => {
@@ -39,16 +42,16 @@ export function useSearch() {
             items={
                 !loading &&
                 data &&
-                data.search.map((item: any) =>
+                (data.search as any[]).map<ActionListItemDescriptor>((item: any) =>
                     item.__typename === "Image"
                         ? {
                               content: item.title,
                               image: item.url,
-                              prefix: "Image",
+                              onAction: () => router.push(`/meme/${item.id}`),
                           }
                         : {
                               content: item.username,
-                              prefix: "User",
+                              onAction: () => router.push(`/u/${item.username}`),
                           },
                 )
             }

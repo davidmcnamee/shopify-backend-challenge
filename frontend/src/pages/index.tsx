@@ -8,31 +8,48 @@ import styled from "styled-components";
 import {FilterSortControls, UploadControls} from "../components/grid-view/controls";
 import {GridView} from "../components/grid-view/grid-view";
 import {useMessage} from "../components/message/message";
+import {SortProps} from "../components/modals/sort-modal";
 import {Split} from "../components/util/split";
+import {IMAGE_FIELDS} from "../util/fragments";
 
 const INDEX_PAGE = gql`
-    query IndexPage {
-        images {
-            id
-            url
-            uploader {
-                id
-            }
-            likedByMe
+    ${IMAGE_FIELDS}
+    query IndexPage($query: ImageQuery!) {
+        images(query: $query) {
+            ...ImageFields
         }
     }
 `;
 
-export default function Home() {
-    const queryData = useQuery(INDEX_PAGE);
+function HomePage() {
+    const [sort, setSort] = useState("UPLOAD_DATE");
+    const [ascending, setAscending] = useState(false);
+    const sortProps: SortProps = {
+        sort,
+        setSort,
+        ascending,
+        setAscending,
+    };
+    const queryData = useQuery(INDEX_PAGE, {
+        variables: {
+            query: {
+                sort,
+                ascending,
+                offset: 0,
+                limit: 30,
+            },
+        },
+    });
 
     return (
         <Page title="Home">
             <Split>
-                <FilterSortControls />
+                <FilterSortControls {...sortProps} />
                 <UploadControls />
             </Split>
-            <GridView {...queryData} />
+            <GridView {...queryData} {...sortProps} />
         </Page>
     );
 }
+
+export default HomePage;

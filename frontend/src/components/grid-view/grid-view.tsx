@@ -1,22 +1,46 @@
 /** @format */
 
-import {gql, OperationVariables, QueryResult} from "@apollo/client";
-import {Spinner} from "@shopify/polaris";
+import {OperationVariables, QueryResult} from "@apollo/client";
+import {useCallback, useEffect} from "react";
+import {debounce} from "lodash";
 import React, {FC} from "react";
 import styled from "styled-components";
-import {HeartOutlined} from "../../icons/heart-outlined";
+import {LikeButton} from "../buttons/like";
 import {useMessage} from "../message/message";
+import {SortProps} from "../modals/sort-modal";
+import PageSpinner from "../util/page-spinner";
+import Link from "next/link";
 
-export const GridViewFragment = gql`
-    
-`
-
-type GridViewProps = QueryResult<any, OperationVariables> & {};
+type GridViewProps = QueryResult<any, OperationVariables> & SortProps;
 
 export const GridView: FC<GridViewProps> = props => {
-    const {loading, error, data} = props;
+    const {loading, error, data, fetchMore} = props;
     const showMessage = useMessage();
-    if (loading) return <Spinner />;
+    const loadMoreImages = useCallback(
+        () =>
+            debounce(
+                () =>
+                    fetchMore({
+                        variables: {
+                            offset: data.images.length,
+                        },
+                    }),
+                2500,
+            ),
+        [data],
+    );
+    useEffect(() => {
+        const onScroll = () => {
+            if (
+                window.scrollY + window.innerHeight >=
+                document.body.clientHeight - 100
+            )
+                loadMoreImages();
+        };
+        document.addEventListener("scroll", onScroll);
+        return () => document.removeEventListener("scroll", onScroll);
+    }, [loadMoreImages]);
+    if (loading) return <PageSpinner />;
     if (error?.message) showMessage(error.message, "error");
 
     return (
@@ -29,24 +53,24 @@ export const GridView: FC<GridViewProps> = props => {
 };
 
 const Image = ({image}) => {
-    const [isLiked, setIsLiked] = React.useState(false);
-
     return (
         <ImageContainer>
-            <img src={image.url} />
-            <StyledLikeButton />
+            <Link href={`/meme/${image.id}`}>
+                <a><img src={image.url} /></a>
+            </Link>
+            <StyledLikeButton
+                id={image.id}
+                likedByMe={image.likedByMe}
+                likeCount={image.likes}
+            />
         </ImageContainer>
     );
 };
 
-const StyledLikeButton = styled(HeartOutlined)`
+const StyledLikeButton = styled(LikeButton)`
     position: absolute;
-    bottom: 0;
-    right: 0;
-    transform: translate(-100%, -100%);
-    height: 1rem;
-    width: auto;
-    z-index: 3;
+    bottom: 1rem;
+    right: 1rem;
 `;
 
 const ImageContainer = styled.div`
@@ -54,7 +78,7 @@ const ImageContainer = styled.div`
     height: auto;
     padding: 1rem;
     z-index: 1;
-    > img {
+    > a > img {
         width: 100%;
         border-radius: 0.5rem;
     }
@@ -63,12 +87,12 @@ const ImageContainer = styled.div`
     @media (min-width: 650px) {
         transition: transform 0.2s ease-in-out;
         will-change: transform, z-index;
-        > img {
+        > a > img {
             opacity: 0.7;
             will-change: opacity;
             transition: opacity 0.2s ease-in-out;
         }
-        :hover > img {
+        :hover > a > img {
             opacity: 1;
         }
         :hover {

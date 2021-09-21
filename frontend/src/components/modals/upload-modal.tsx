@@ -52,7 +52,7 @@ type ModalProps = {
 
 export const UploadImageModal: FC<ModalProps> = ({modalOpen, setModalOpen}) => {
     const showMessage = useMessage();
-    const validImageTypes = ["image/gif", "image/jpeg", "image/jpg", "image/png"];
+    const validImageTypes = ["image/gif", "image/jpeg", "image/png"];
     const [submitting, setSubmitting] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [title, setTitle] = useState("");

@@ -13,6 +13,8 @@ export const errors = {
     UNAUTHENTICATED_USER: "You must be logged in to perform this action.",
     DUPLICATE_IMAGE_UPLOAD: "Cannot reupload a duplicate image.",
     INVALID_FILE_EXTENSION: "Invalid file extension.",
+    FOR_SALE_IMAGE_MUST_HAVE_PRICE:
+        "An image that's on sale must contain price information.",
 };
 
 type ErrorCode = keyof typeof errors;

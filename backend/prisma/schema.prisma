@@ -22,6 +22,7 @@ model User {
   currency    String?
   discount    Int?
   stripeAccountId String?
+  createdAt   DateTime  @default(now())
 }
 
 model Following {
@@ -51,6 +52,7 @@ model Image {
   owner       User      @relation(name: "OwnedImages", fields: [ownerId], references: [id])
   likes       Likes[]
   uploadJob   UploadJob? @relation(fields: [uploadJobId], references: [id])
+  createdAt   DateTime  @default(now())
 }
 
 model Likes {
