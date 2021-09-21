@@ -18,6 +18,7 @@ Images are unique throughout the platform (using perceptual hashing libraries), 
 * Login/Register an account
 * Upload an image (or more)
 * View the images in your feed
+* Search for an image by name or a user by username
 * When logged out, you can only see other users' private images
 * After becoming a premium follower, you can see that user's private images
 
