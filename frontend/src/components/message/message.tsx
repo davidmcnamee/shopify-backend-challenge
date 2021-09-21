@@ -78,6 +78,7 @@ export function useMessageProvider() {
                 msgDispatch({type: "remove", id, msg, msgType: type});
             }, 1000);
         }, 4000);
+        return null;
     };
     return [MessageContext.Provider, messages, addMessage] as const;
 }

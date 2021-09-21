@@ -61,7 +61,6 @@ const UserMenu: FC<UserMenuProps> = props => {
                         username
                             ? {content: "Profile", url: `/u/${username}`}
                             : {content: "Login", url: "/login"},
-                        {content: "Settings", url: "/settings"},
                     ],
                 },
             ]}

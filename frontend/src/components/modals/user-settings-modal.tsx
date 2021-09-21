@@ -10,15 +10,15 @@ import {
     TextField,
 } from "@shopify/polaris";
 import {SaveMinor} from "@shopify/polaris-icons";
-import React, {Dispatch, FC, SetStateAction, useCallback, useState} from "react";
+import React, {Dispatch, FC, SetStateAction, useCallback, useEffect, useState} from "react";
+import { client } from "../../util/apollo";
 import {IMAGE_FIELDS} from "../../util/fragments";
 import {handleError} from "../message/error-handler";
 import {useMessage} from "../message/message";
 
 const UPDATE_USER = gql`
-    ${IMAGE_FIELDS}
     mutation UpdateUser($input: UpdateSettingsInput!) {
-        images {
+        users {
             updateSettings(input: $input) {
                 id
                 username
@@ -34,6 +34,14 @@ const UPDATE_USER = gql`
     }
 `;
 
+const LINK_STRIPE_MUTATION = gql`
+    mutation LinkStripeAccount {
+        users {
+            linkStripeAccount
+        }
+    }
+`;
+
 type ModalProps = {
     modalOpen: boolean;
     setModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -42,6 +50,8 @@ type ModalProps = {
 
 export const UpdateUserModal: FC<ModalProps> = ({modalOpen, setModalOpen, user}) => {
     const showMessage = useMessage();
+    const [mutation, {data}] = useMutation(LINK_STRIPE_MUTATION);
+    useEffect(() => {mutation()}, []);
     const [submitting, setSubmitting] = useState(false);
     const [forSale, setForSale] = useState<boolean>(user.forSale);
     const [amount, setAmount] = useState<string>(user.price?.amount);
@@ -92,6 +102,11 @@ export const UpdateUserModal: FC<ModalProps> = ({modalOpen, setModalOpen, user})
             primaryAction={{icon: SaveMinor, content: "Save", onAction: submit}}
             footer={submitting ? <Spinner /> : null}
         >
+            <Modal.Section>
+                {data && (
+                    <a href={data.users.linkStripeAccount} target="_blank">Link Stripe Account</a>
+                )}
+            </Modal.Section>
             <Modal.Section>
                 <Form onSubmit={submit}>
                     <FormLayout>

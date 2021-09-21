@@ -1,3 +1,10 @@
+# @format
+
+enum FollowingStatus {
+    NOT_FOLLOWING
+    FOLLOWING_UNPAID
+    FOLLOWING_PAID
+}
 
 type User {
     id: ID!
@@ -9,7 +16,8 @@ type User {
     acceptingPayments: Boolean!
     following: [User!]!
     followers: [User!]!
-    createdAt: Int!
+    followingStatus: FollowingStatus!
+    createdAt: Float!
     forSale: Boolean!
     price: Price
 }
@@ -118,7 +126,6 @@ input ImageQuery {
     ascending: Boolean!
     offset: Int!
     limit: Int!
-    userFilter: ID # deprecated
 }
 
 input UpdateSettingsInput {
@@ -138,18 +145,20 @@ type Query {
 }
 
 type ImageMutations {
-    purchaseImage(input: PurchaseImageInput!): Image!
     updateImage(input: UpdateImageInput!): Image!
-    uploadImage(input: UploadImageInput!): Image!
+    uploadImage(input: UploadImageInput!): Image! # deprecated
     uploadImages(input: [UploadImageInput!]!): [Image!]!
     uploadImagesFromFile(url: String!): Job!
     setLike(id: ID!, like: Boolean!): Image
+    deleteImage(id: ID!): Boolean!
 }
 
 type UserMutations {
     login(input: LoginInput!): User!
     register(input: RegisterInput!): User!
     updateSettings(input: UpdateSettingsInput!): User!
+    linkStripeAccount: String!
+    follow(id: ID!, value: FollowingStatus): String
 }
 
 type Mutation {

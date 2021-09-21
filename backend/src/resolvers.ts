@@ -7,14 +7,15 @@ import dataproc from "@google-cloud/dataproc";
 import type { google } from "@google-cloud/dataproc/build/protos/protos";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import bcrypt from "bcryptjs";
-import { zip } from "lodash";
-import { Stripe } from "stripe";
-import { v4 as uuidv4 } from "uuid";
-import { db, s3 } from "./db";
-import { createError } from "./types/external-errors";
-import { CustomContextType } from "./types/static";
+import {floor, zip} from "lodash";
+import {Stripe} from "stripe";
+import {v4 as uuidv4} from "uuid";
+import {db, s3} from "./db";
+import { stripe } from "./stripe";
+import {createError} from "./types/external-errors";
+import {CustomContextType} from "./types/static";
 import {
-    ImageMutationsPurchaseImageArgs,
+    ImageMutationsDeleteImageArgs,
     ImageMutationsSetLikeArgs,
     ImageMutationsUpdateImageArgs,
     ImageMutationsUploadImageArgs,
@@ -29,22 +30,25 @@ import {
     QueryResolvers,
     User,
     UserMutations,
+    UserMutationsFollowArgs,
     UserMutationsLoginArgs,
-    UserMutationsRegisterArgs, UserResolvers
+    UserMutationsRegisterArgs,
+    UserResolvers,
 } from "./types/types";
 import {
     completeUploadJobAsync,
     generateImageName,
-    parseImageQueryArgs
+    parseImageQueryArgs,
 } from "./util";
 import {
-    assertCorrectUser, assertFileExtensionsAllowed, assertImageExists,
-    assertImageIsPurchaseable, assertImagesUnique, assertUserExists
+    assertCorrectUser,
+    assertFileExtensionsAllowed,
+    assertImageExists,
+    assertImageIsPurchaseable,
+    assertImagesUnique,
+    assertPriceValid,
+    assertUserExists,
 } from "./validators";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2020-08-27",
-});
 
 type IJobMetadata = google.cloud.dataproc.v1.IJobMetadata;
 
@@ -58,6 +62,20 @@ const jobClient = new dataproc.v1.JobControllerClient({
 });
 
 const User: UserResolvers<CustomContextType, DbUser> = {
+    followingStatus: async (parent, args, context) => {
+        if (!context.getUser()) return "NOT_FOLLOWING";
+        const following = await db.following.findUnique({
+            where: {
+                followerId_followeeId: {
+                    followerId: context.getUser().id,
+                    followeeId: parent.id,
+                },
+            },
+        });
+        if (!following) return "NOT_FOLLOWING";
+        if (!following.paid) return "FOLLOWING_UNPAID";
+        return "FOLLOWING_PAID";
+    },
     email: async (parent, _args, context) => {
         assertCorrectUser(context.getUser(), parent.id);
         return parent.email;
@@ -102,11 +120,7 @@ const User: UserResolvers<CustomContextType, DbUser> = {
 const ImageType: ImageResolvers<CustomContextType, DbImage> = {
     ownership: parent => parent,
     price: parent => {
-        if (
-            parent.currency &&
-            parent.amount !== undefined &&
-            parent.discount !== undefined
-        )
+        if (parent.forSale)
             return parent;
         return null;
     },
@@ -167,7 +181,7 @@ const Query: QueryResolvers<CustomContextType> = {
         console.log("SEARCH QUERY: ", args.query);
         const matchingImages = db.image.findMany({
             where: {
-                title: {contains: args.query, mode: "insensitive"},
+                title: {contains: args.query},
                 // OR: [
                 //     {title: {contains: args.query, mode: "insensitive"}},
                 //     {id: {contains: args.query, mode: "insensitive"}},
@@ -234,22 +248,12 @@ const Query: QueryResolvers<CustomContextType> = {
     me: async (_parent, args, context) => {
         return context.getUser();
     },
+    user: async (_parent, args, context, info) => {
+        return db.user.findUnique({where: {username: args.username}});
+    },
 };
 
 const ImageMutations = {
-    purchaseImage: async (
-        args: ImageMutationsPurchaseImageArgs,
-        context: CustomContextType,
-    ) => {
-        assertUserExists(context.getUser());
-        const image = await db.image.findUnique({where: {id: args.input.imageID}});
-        assertImageExists(image);
-        assertImageIsPurchaseable(image, context.getUser());
-        return db.image.update({
-            where: {id: args.input.imageID},
-            data: {ownerId: context.getUser().id, forSale: false},
-        });
-    },
     updateImage: async (
         args: ImageMutationsUpdateImageArgs,
         context: CustomContextType,
@@ -259,6 +263,7 @@ const ImageMutations = {
         assertUserExists(context.getUser());
         let image = await db.image.findUnique({where: {id}});
         assertCorrectUser(context.getUser(), image.ownerId);
+        if(price) assertPriceValid(price);
         image = await db.image.update({
             where: {id},
             data: {
@@ -278,6 +283,7 @@ const ImageMutations = {
     ) => {
         assertUserExists(context.getUser());
         const [hash] = await assertImagesUnique([args.input.url]);
+        if(args.input.price) assertPriceValid(args.input.price);
         const image = await db.image.create({
             data: {
                 hash: hash,
@@ -377,18 +383,79 @@ const ImageMutations = {
             });
         return db.image.findUnique({where: {id: args.id}});
     },
+    deleteImage: async (args: ImageMutationsDeleteImageArgs, context: CustomContextType) => {
+        const image = await db.image.findUnique({where: {id: args.id}});
+        assertCorrectUser(context.getUser(), image.ownerId)
+        await db.image.delete({
+            where: {id: args.id},
+        });
+        return true;
+    }
 };
 
 const UserMutations = {
+    follow: async (args: UserMutationsFollowArgs, context: CustomContextType) => {
+        assertUserExists(context.getUser());
+        const followee = await db.user.findUnique({where: {id: args.id}});
+        assertUserExists(followee);
+        const primaryKey = {
+            followerId_followeeId: {
+                followerId: context.getUser().id,
+                followeeId: args.id,
+            },
+        };
+        if (args.value === "NOT_FOLLOWING") {
+            await db.following.delete({
+                where: primaryKey,
+            });
+            return null;
+        } else if (args.value === "FOLLOWING_UNPAID") {
+            await db.following.create({
+                data: {
+                    followerId: context.getUser().id,
+                    followeeId: args.id,
+                    paid: false,
+                },
+            });
+            return null;
+        }
+        // FOLLOWING_PAID
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            line_items: [
+                {
+                    name: `Premium Follower to ${followee.username}`,
+                    amount: floor(followee.amount * (1 - followee.discount / 10000)),
+                    currency: followee.currency,
+                    quantity: 1,
+                },
+            ],
+            payment_intent_data: {
+                application_fee_amount: 0,
+                transfer_data: {
+                    destination: followee.stripeAccountId,
+                },
+            },
+            mode: "payment",
+            success_url: `${process.env.FRONTEND_ORIGIN}/u/${followee.username}`,
+            cancel_url: `${process.env.FRONTEND_ORIGIN}/u/${followee.username}`,
+        });
+        return session.url;
+    },
     updateSettings: async (args, context) => {
         const user = context.getUser();
         assertUserExists(user);
         const {forSale, price} = args.input;
-        if(forSale) {
-            if(!price)throw createError("FOR_SALE_USER_MUST_HAVE_PRICE");
-            if(!user.stripeAccountId) throw createError("FOR_SALE_USER_STRIPE_UNVERIFIED");
-            const stripeAccount = await stripe.accounts.retrieve(user.stripeAccountId);
-            if(!stripeAccount.details_submitted) throw createError("FOR_SALE_USER_STRIPE_UNVERIFIED");
+        if (forSale) {
+            if (!price) throw createError("FOR_SALE_USER_MUST_HAVE_PRICE");
+            if (!user.stripeAccountId)
+                throw createError("FOR_SALE_USER_STRIPE_UNVERIFIED");
+            const stripeAccount = await stripe.accounts.retrieve(
+                user.stripeAccountId,
+            );
+            if (!stripeAccount.details_submitted)
+                throw createError("FOR_SALE_USER_STRIPE_UNVERIFIED");
+            assertPriceValid(price);
         }
         return db.user.update({
             where: {id: user.id},
@@ -430,7 +497,7 @@ const UserMutations = {
                 throw createError("DUPLICATE_USERNAME");
         }
     },
-    createStripeAccount: async (_args: never, context: CustomContextType) => {
+    linkStripeAccount: async (_args: never, context: CustomContextType) => {
         const user = context.getUser();
         assertUserExists(user);
         let stripeAccount: Stripe.Account = null;
@@ -445,8 +512,8 @@ const UserMutations = {
         }
         const accountLinks = await stripe.accountLinks.create({
             account: stripeAccount.id,
-            refresh_url: `${process.env.FRONTEND_ORIGIN}/settings`,
-            return_url: `${process.env.FRONTEND_ORIGIN}/settings`,
+            refresh_url: `${process.env.FRONTEND_ORIGIN}/u/${user.username}`,
+            return_url: `${process.env.FRONTEND_ORIGIN}/u/${user.username}`,
             type: "account_onboarding",
         });
         return accountLinks.url;

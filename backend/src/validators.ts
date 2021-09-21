@@ -1,8 +1,10 @@
 /** @format */
 
 import {User, Image} from "@prisma/client";
+import {isInteger} from "lodash";
 import {db} from "./db";
 import {createError} from "./types/external-errors";
+import {Price} from "./types/types";
 import {computeHash} from "./util";
 
 export function assertFileExtensionsAllowed(fileExtensions: string[]) {
@@ -40,4 +42,13 @@ export async function assertImagesUnique(urls: string[]) {
     });
     if (duplicateImage) throw createError("DUPLICATE_IMAGE_UPLOAD");
     return imageHashes;
+}
+
+export function assertPriceValid(price: Price) {
+    if (price.amount <= 0 || !isInteger(price.amount))
+        throw createError("INVALID_PRICE");
+    if (!["usd", "cad", "eur"].includes(price.currency))
+        throw createError("INVALID_CURRENCY");
+    if (price.discount <= 0 || !isInteger(price.discount) || price.discount >= 10000)
+        throw createError("INVALID_DISCOUNT");
 }

@@ -11,6 +11,7 @@ import {handleError} from "../../components/message/error-handler";
 import {useMessage} from "../../components/message/message";
 import {UpdateImageModal} from "../../components/modals/update-modal";
 import PageSpinner from "../../components/util/page-spinner";
+import {Price} from "../../components/util/price";
 import {Left, Right, Split} from "../../components/util/split";
 import {IMAGE_FIELDS} from "../../util/fragments";
 
@@ -44,24 +45,6 @@ const SingleMemePage: FC = () => {
             showMessage,
             "An error occurred while retrieving this meme, please try again later.",
         );
-
-    let oldPrice = null;
-    let discountedPrice = null;
-    let discount = null;
-    if (data.get.price) {
-        const numberFormat = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: data.get.price.currency,
-        });
-        oldPrice = numberFormat.format(data.get.price.amount / 100);
-        if (data.get.price.discount !== 0) {
-            discountedPrice = numberFormat.format(
-                (data.get.price.amount * (1 - data.get.price.discount / 10000)) /
-                    100,
-            );
-            discount = "(" + (data.get.price.discount / 100).toString() + "% off!)";
-        }
-    }
 
     return (
         <Page title={data.get.title}>
@@ -108,28 +91,13 @@ const SingleMemePage: FC = () => {
                         {data.get.forSale ? "FOR SALE" : "NOT FOR SALE"}
                     </Property>
                     {data.get.forSale && (
-                        <Property>
-                            <Discount>{discountedPrice}</Discount>{" "}
-                            <RegularPrice strikethrough={discount}>
-                                {oldPrice}
-                            </RegularPrice>{" "}
-                            {data.get.price.currency} <Discount>{discount}</Discount>
-                        </Property>
+                        <Price price={data.get.price} />
                     )}
                 </Right>
             </Split>
         </Page>
     );
 };
-
-const Discount = styled.span`
-    color: red;
-    font-weight: 700;
-`;
-
-const RegularPrice = styled.span<{strikethrough: boolean}>`
-    ${p => p.strikethrough && "text-decoration: line-through;"}
-`;
 
 const Image = styled.img`
     width: 100%;

@@ -1,21 +1,25 @@
 /** @format */
 
-import {ApolloServer} from "apollo-server-express";
-import {ApolloServerPluginDrainHttpServer} from "apollo-server-core";
-import {ApolloServerPluginLandingPageGraphQLPlayground} from "apollo-server-core";
-import {readFile as originalReadFile} from "fs";
-import {resolvers} from "./resolvers";
-import http from "http";
-import express from "express";
-import {promisify} from "util";
-import cookieSession from "cookie-session";
-import {GraphQLLocalStrategy, buildContext} from "graphql-passport";
-import passport from "passport";
-import {db} from "./db";
-import {createError} from "./types/external-errors";
 import {User} from ".prisma/client";
+import {
+    ApolloServerPluginDrainHttpServer,
+    ApolloServerPluginLandingPageGraphQLPlayground,
+} from "apollo-server-core";
+import {ApolloServer} from "apollo-server-express";
 import bcrypt from "bcryptjs";
+import cookieSession from "cookie-session";
 import cors from "cors";
+import express from "express";
+import {readFile as originalReadFile} from "fs";
+import {buildContext, GraphQLLocalStrategy} from "graphql-passport";
+import http from "http";
+import passport from "passport";
+import {promisify} from "util";
+import {db} from "./db";
+import {resolvers} from "./resolvers";
+import {createError} from "./types/external-errors";
+import {stripeWebhookHandler} from "./webhook";
+import bodyParser from "body-parser";
 const readFile = promisify(originalReadFile);
 
 passport.use(
@@ -32,13 +36,11 @@ passport.use(
 );
 
 passport.serializeUser(function (user, done) {
-    console.log("serializing ", user, (user as User).id);
     done(null, (user as User).id);
 });
 
 passport.deserializeUser(async function (id: string, done) {
     const user = await db.user.findUnique({where: {id}});
-    console.log("deserializing ", id, user);
     if (!user) done(null, null);
     else done(null, user);
 });
@@ -46,6 +48,7 @@ passport.deserializeUser(async function (id: string, done) {
 async function main() {
     const typeDefs = await readFile("./src/schema.graphql", "utf-8");
     const app = express();
+    console.log('cors set up for: ', process.env.FRONTEND_ORIGIN);
     app.use(
         cors({
             origin: process.env.FRONTEND_ORIGIN,
@@ -55,6 +58,11 @@ async function main() {
     );
     const httpServer = http.createServer(app);
     app.get("/", (req, res) => res.sendStatus(200)); // healthcheck
+    app.post(
+        "/stripe/webhook",
+        bodyParser.raw({type: "application/json"}),
+        stripeWebhookHandler,
+    );
     app.use(cookieSession({secret: process.env.SESSION_SECRET}));
     app.use(passport.initialize());
     app.use(passport.session());

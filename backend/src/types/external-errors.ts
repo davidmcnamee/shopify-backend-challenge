@@ -19,6 +19,11 @@ export const errors = {
         "To enable paid account mode, pricing info must be included.",
     FOR_SALE_USER_STRIPE_UNVERIFIED:
         "To enable paid account mode, your stripe account must be verified.",
+    INVALID_PRICE:
+        "That price amount is invalid. Amounts must be a positive number.",
+    INVALID_CURRENCY:
+        "Invalid currency. Currently we only accept the currency codes 'usd', 'cad', or 'eur'.",
+    INVALID_DISCOUNT: "Invalid discount. Discounts must be between 0 and 100.",
 };
 
 type ErrorCode = keyof typeof errors;

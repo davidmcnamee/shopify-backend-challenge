@@ -16,28 +16,28 @@ type GridViewProps = Partial<QueryResult<any, OperationVariables> & SortProps>;
 export const GridView: FC<GridViewProps> = props => {
     const {loading, error, data, fetchMore, sort, ascending} = props;
     const showMessage = useMessage();
-    const loadMoreImages = useCallback(
-        () =>
-            debounce(
-                () =>
-                    fetchMore({
-                        variables: {
-                            query: {
-                                limit:30,
-                                sort, ascending,
-                                offset: data.images.length,
-                            }
-                        },
-                    }),
-                2500,
-            ),
-        [data],
-    );
+    const fetchMoreDebounce = useCallback(debounce(fetchMore, 1500), [fetchMore]);
+    const loadMoreImages = useCallback(() => {
+        fetchMoreDebounce({
+            variables: {
+                query: {
+                    limit: 10,
+                    sort,
+                    ascending,
+                    offset: data.images.length,
+                },
+            },
+        });
+    }, [data]);
     useEffect(() => {
         const onScroll = () => {
+            console.log(
+                document.documentElement.scrollTop,
+                document.documentElement.scrollHeight - window.innerHeight - 100,
+            );
             if (
-                window.scrollY + window.innerHeight >=
-                document.body.clientHeight - 100
+                document.documentElement.scrollTop >=
+                document.documentElement.scrollHeight - window.innerHeight - 100
             )
                 loadMoreImages();
         };

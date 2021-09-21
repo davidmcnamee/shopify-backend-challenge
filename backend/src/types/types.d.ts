@@ -21,6 +21,12 @@ export type Error = {
   message: Scalars['String'];
 };
 
+export enum FollowingStatus {
+  FollowingPaid = 'FOLLOWING_PAID',
+  FollowingUnpaid = 'FOLLOWING_UNPAID',
+  NotFollowing = 'NOT_FOLLOWING'
+}
+
 export type Image = {
   __typename?: 'Image';
   forSale: Scalars['Boolean'];
@@ -37,7 +43,7 @@ export type Image = {
 
 export type ImageMutations = {
   __typename?: 'ImageMutations';
-  purchaseImage: Image;
+  deleteImage: Scalars['Boolean'];
   setLike?: Maybe<Image>;
   updateImage: Image;
   uploadImage: Image;
@@ -46,8 +52,8 @@ export type ImageMutations = {
 };
 
 
-export type ImageMutationsPurchaseImageArgs = {
-  input: PurchaseImageInput;
+export type ImageMutationsDeleteImageArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -87,7 +93,6 @@ export type ImageQuery = {
   limit: Scalars['Int'];
   offset: Scalars['Int'];
   sort: SortField;
-  userFilter?: Maybe<Scalars['ID']>;
 };
 
 export type Job = {
@@ -220,10 +225,12 @@ export type UploadUrl = {
 export type User = {
   __typename?: 'User';
   acceptingPayments: Scalars['Boolean'];
-  createdAt: Scalars['Int'];
+  createdAt: Scalars['Float'];
   email: Scalars['String'];
   followers: Array<User>;
   following: Array<User>;
+  followingStatus: FollowingStatus;
+  forSale: Scalars['Boolean'];
   id: Scalars['ID'];
   ownedImages: Array<Image>;
   price?: Maybe<Price>;
@@ -237,9 +244,17 @@ export type UserOwnedImagesArgs = {
 
 export type UserMutations = {
   __typename?: 'UserMutations';
+  follow?: Maybe<Scalars['String']>;
+  linkStripeAccount: Scalars['String'];
   login: User;
   register: User;
   updateSettings: User;
+};
+
+
+export type UserMutationsFollowArgs = {
+  id: Scalars['ID'];
+  value?: Maybe<FollowingStatus>;
 };
 
 
@@ -321,6 +336,8 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
   Error: ResolverTypeWrapper<Error>;
+  Float: ResolverTypeWrapper<Scalars['Float']>;
+  FollowingStatus: FollowingStatus;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   Image: ResolverTypeWrapper<Image>;
   ImageMutations: ResolverTypeWrapper<ImageMutations>;
@@ -352,6 +369,7 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   Boolean: Scalars['Boolean'];
   Error: Error;
+  Float: Scalars['Float'];
   ID: Scalars['ID'];
   Image: Image;
   ImageMutations: ImageMutations;
@@ -398,7 +416,7 @@ export type ImageResolvers<ContextType = CustomContextType, ParentType = Resolve
 };
 
 export type ImageMutationsResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['ImageMutations']> = {
-  purchaseImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsPurchaseImageArgs, 'input'>>;
+  deleteImage?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<ImageMutationsDeleteImageArgs, 'id'>>;
   setLike?: Resolver<Maybe<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<ImageMutationsSetLikeArgs, 'id' | 'like'>>;
   updateImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUpdateImageArgs, 'input'>>;
   uploadImage?: Resolver<ResolversTypes['Image'], ParentType, ContextType, RequireFields<ImageMutationsUploadImageArgs, 'input'>>;
@@ -457,10 +475,12 @@ export type UploadUrlResolvers<ContextType = CustomContextType, ParentType = Res
 
 export type UserResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['User']> = {
   acceptingPayments?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  createdAt?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   followers?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
   following?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+  followingStatus?: Resolver<ResolversTypes['FollowingStatus'], ParentType, ContextType>;
+  forSale?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   ownedImages?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<UserOwnedImagesArgs, 'query'>>;
   price?: Resolver<Maybe<ResolversTypes['Price']>, ParentType, ContextType>;
@@ -469,6 +489,8 @@ export type UserResolvers<ContextType = CustomContextType, ParentType = Resolver
 };
 
 export type UserMutationsResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['UserMutations']> = {
+  follow?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType, RequireFields<UserMutationsFollowArgs, 'id'>>;
+  linkStripeAccount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   login?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<UserMutationsLoginArgs, 'input'>>;
   register?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<UserMutationsRegisterArgs, 'input'>>;
   updateSettings?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<UserMutationsUpdateSettingsArgs, 'input'>>;
