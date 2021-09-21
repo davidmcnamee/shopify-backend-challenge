@@ -18,6 +18,8 @@ Users who are looking to build a following can set their price from the profile 
 
 Images are unique throughout the platform (using "blockhash" perceptual hashing libraries), and image files are only distributed with expiring s3 signed urls, incentivising fresh content rather than copied memes.
 
+> With limited time to do this (interviews and whatnot) I couldn't finish all the features that I would have liked to, anything that's not working should be mentioned at the bottom of this readme.
+
 ## User Guide / Screenshots
 
 > TODO: screenshots
