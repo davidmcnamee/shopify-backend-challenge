@@ -36,10 +36,12 @@ Kubernetes is used for deployments, with yaml configuration in the [`/k8s`](/k8s
 ### Infrastructure Used
 
 Currently the provisioned infrastructure includes:
-* A PostgreSQL13 database provisioned via Googel Cloud SQL
+* A PostgreSQL13 database provisioned via Google Cloud SQL
 * An S3 bucket which is used to store all the images for the site
 * A Google Dataproc cluster for handling bulk image uploads using Apache Spark.
 * Stripe Connect for accepting payments between two parties
+
+I also have additional terraform configs [here](https://github.com/davidmcnamee/permanent-infra) to provision my kubernetes cluster, remote development environment, and route53 domain settings in case that piques your interest.
 
 ## Improvements / Todo
 
