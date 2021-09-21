@@ -1,42 +1,34 @@
 /** @format */
 
-import {gql, useLazyQuery, useMutation} from "@apollo/client";
+import {gql, useMutation} from "@apollo/client";
 import {
-    Modal,
-    DropZone,
-    Button,
-    Caption,
+    Checkbox,
     Form,
     FormLayout,
-    Icon,
-    Stack,
-    Thumbnail,
-    TextField,
+    Modal,
     Spinner,
-    Checkbox,
-    ChoiceList,
+    TextField,
 } from "@shopify/polaris";
-import {
-    NoteMinor,
-    MobileCancelMajor,
-    PlusMinor,
-    SaveMinor,
-} from "@shopify/polaris-icons";
-import React, {Dispatch, SetStateAction, FC, useState, useCallback} from "react";
-import {client} from "../../util/apollo";
-import axios from "axios";
-import {useMessage} from "../message/message";
-import {zip} from "lodash";
-import {useRouter} from "next/router";
-import {handleError} from "../message/error-handler";
+import {SaveMinor} from "@shopify/polaris-icons";
+import React, {Dispatch, FC, SetStateAction, useCallback, useState} from "react";
 import {IMAGE_FIELDS} from "../../util/fragments";
+import {handleError} from "../message/error-handler";
+import {useMessage} from "../message/message";
 
-const UPDATE_IMAGE = gql`
+const UPDATE_USER = gql`
     ${IMAGE_FIELDS}
-    mutation UpdateImage($input: UpdateImageInput!) {
+    mutation UpdateUser($input: UpdateSettingsInput!) {
         images {
-            updateImage(input: $input) {
-                ...ImageFields
+            updateSettings(input: $input) {
+                id
+                username
+                forSale
+                acceptingPayments
+                price {
+                    amount
+                    currency
+                    discount
+                }
             }
         }
     }
@@ -45,28 +37,19 @@ const UPDATE_IMAGE = gql`
 type ModalProps = {
     modalOpen: boolean;
     setModalOpen: Dispatch<SetStateAction<boolean>>;
-    image: any;
+    user: any;
 };
 
-export const UpdateImageModal: FC<ModalProps> = ({
-    modalOpen,
-    setModalOpen,
-    image,
-}) => {
+export const UpdateUserModal: FC<ModalProps> = ({modalOpen, setModalOpen, user}) => {
     const showMessage = useMessage();
     const [submitting, setSubmitting] = useState(false);
-    const [title, setTitle] = useState<string>(image.title);
-    const [isPublic, setPublic] = useState<boolean>(image.public);
-    const [forSale, setForSale] = useState<boolean>(image.forSale);
-    const [amount, setAmount] = useState<string>(image.price?.amount);
-    const [currency, setCurrency] = useState<string>(image.price?.currency ?? "USD");
-    const [discount, setDiscount] = useState<string>(image.price?.discount);
-    const [updateImage] = useMutation(UPDATE_IMAGE, {
+    const [forSale, setForSale] = useState<boolean>(user.forSale);
+    const [amount, setAmount] = useState<string>(user.price?.amount);
+    const [currency, setCurrency] = useState<string>(user.price?.currency ?? "USD");
+    const [discount, setDiscount] = useState<string>(user.price?.discount);
+    const [updateImage] = useMutation(UPDATE_USER, {
         variables: {
             input: {
-                id: image.id,
-                title,
-                public: isPublic,
                 forSale,
                 price: forSale
                     ? {
@@ -94,17 +77,17 @@ export const UpdateImageModal: FC<ModalProps> = ({
             handleError(
                 err,
                 showMessage,
-                "Something went wrong while updating your meme, please try again later.",
+                "Something went wrong while updating your settings, please try again later.",
             );
         } finally {
             setSubmitting(false);
         }
-    }, [title, isPublic, forSale, amount, currency, discount]);
+    }, [forSale, amount, currency, discount]);
 
     return (
         <Modal
             open={modalOpen}
-            title="Update Meme"
+            title="Update Settings"
             onClose={() => setModalOpen(false)}
             primaryAction={{icon: SaveMinor, content: "Save", onAction: submit}}
             footer={submitting ? <Spinner /> : null}
@@ -112,21 +95,8 @@ export const UpdateImageModal: FC<ModalProps> = ({
             <Modal.Section>
                 <Form onSubmit={submit}>
                     <FormLayout>
-                        <TextField label="Title" value={title} onChange={setTitle} />
-                        <ChoiceList
-                            title="Visibility"
-                            allowMultiple={false}
-                            choices={[
-                                {label: "Public", value: "public"},
-                                {label: "Private", value: "private"},
-                            ]}
-                            selected={[isPublic ? "public" : "private"]}
-                            onChange={(value: string[]) =>
-                                setPublic(value[0] === "public")
-                            }
-                        />
                         <Checkbox
-                            label="For Sale"
+                            label="Paid Account"
                             checked={forSale}
                             onChange={() => setForSale(f => !f)}
                         />

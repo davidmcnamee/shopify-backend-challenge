@@ -145,6 +145,7 @@ export type Query = {
   images: Array<Image>;
   me?: Maybe<User>;
   search: Array<Object>;
+  user?: Maybe<User>;
 };
 
 
@@ -165,6 +166,11 @@ export type QueryImagesArgs = {
 
 export type QuerySearchArgs = {
   query?: Maybe<Scalars['String']>;
+};
+
+
+export type QueryUserArgs = {
+  username: Scalars['String'];
 };
 
 export type RegisterInput = {
@@ -192,6 +198,11 @@ export type UpdateImageInput = {
   title?: Maybe<Scalars['String']>;
 };
 
+export type UpdateSettingsInput = {
+  forSale: Scalars['Boolean'];
+  price?: Maybe<PriceInput>;
+};
+
 export type UploadImageInput = {
   forSale: Scalars['Boolean'];
   price?: Maybe<PriceInput>;
@@ -209,16 +220,26 @@ export type UploadUrl = {
 export type User = {
   __typename?: 'User';
   acceptingPayments: Scalars['Boolean'];
+  createdAt: Scalars['Int'];
   email: Scalars['String'];
+  followers: Array<User>;
+  following: Array<User>;
   id: Scalars['ID'];
-  inventory: Array<Image>;
+  ownedImages: Array<Image>;
+  price?: Maybe<Price>;
   username: Scalars['String'];
+};
+
+
+export type UserOwnedImagesArgs = {
+  query: ImageQuery;
 };
 
 export type UserMutations = {
   __typename?: 'UserMutations';
   login: User;
   register: User;
+  updateSettings: User;
 };
 
 
@@ -229,6 +250,11 @@ export type UserMutationsLoginArgs = {
 
 export type UserMutationsRegisterArgs = {
   input: RegisterInput;
+};
+
+
+export type UserMutationsUpdateSettingsArgs = {
+  input: UpdateSettingsInput;
 };
 
 
@@ -315,6 +341,7 @@ export type ResolversTypes = {
   SortField: SortField;
   String: ResolverTypeWrapper<Scalars['String']>;
   UpdateImageInput: UpdateImageInput;
+  UpdateSettingsInput: UpdateSettingsInput;
   UploadImageInput: UploadImageInput;
   UploadUrl: ResolverTypeWrapper<UploadUrl>;
   User: ResolverTypeWrapper<User>;
@@ -343,6 +370,7 @@ export type ResolversParentTypes = {
   SearchInput: SearchInput;
   String: Scalars['String'];
   UpdateImageInput: UpdateImageInput;
+  UpdateSettingsInput: UpdateSettingsInput;
   UploadImageInput: UploadImageInput;
   UploadUrl: UploadUrl;
   User: User;
@@ -418,6 +446,7 @@ export type QueryResolvers<ContextType = CustomContextType, ParentType = Resolve
   images?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<QueryImagesArgs, 'query'>>;
   me?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   search?: Resolver<Array<ResolversTypes['Object']>, ParentType, ContextType, RequireFields<QuerySearchArgs, never>>;
+  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'username'>>;
 };
 
 export type UploadUrlResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['UploadUrl']> = {
@@ -428,9 +457,13 @@ export type UploadUrlResolvers<ContextType = CustomContextType, ParentType = Res
 
 export type UserResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['User']> = {
   acceptingPayments?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  followers?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
+  following?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  inventory?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType>;
+  ownedImages?: Resolver<Array<ResolversTypes['Image']>, ParentType, ContextType, RequireFields<UserOwnedImagesArgs, 'query'>>;
+  price?: Resolver<Maybe<ResolversTypes['Price']>, ParentType, ContextType>;
   username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -438,6 +471,7 @@ export type UserResolvers<ContextType = CustomContextType, ParentType = Resolver
 export type UserMutationsResolvers<ContextType = CustomContextType, ParentType = ResolversParentTypes['UserMutations']> = {
   login?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<UserMutationsLoginArgs, 'input'>>;
   register?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<UserMutationsRegisterArgs, 'input'>>;
+  updateSettings?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<UserMutationsUpdateSettingsArgs, 'input'>>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

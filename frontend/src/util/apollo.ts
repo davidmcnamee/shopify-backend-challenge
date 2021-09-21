@@ -18,17 +18,31 @@ export const client = new ApolloClient({
                 fields: {
                     images: {
                         keyArgs: [],
-                        merge(existing, incoming, { args: { offset = 0 }}) {
+                        merge(existing, incoming, {args: {offset = 0}}) {
                             const merged = existing ? existing.slice(0) : [];
                             for (let i = 0; i < incoming.length; ++i) {
                                 merged[offset + i] = incoming[i];
                             }
                             return merged;
                         },
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+            User: {
+                fields: {
+                    ownedImages: {
+                        keyArgs: [],
+                        merge(existing, incoming, {args: {offset = 0}}) {
+                            const merged = existing ? existing.slice(0) : [];
+                            for (let i = 0; i < incoming.length; ++i) {
+                                merged[offset + i] = incoming[i];
+                            }
+                            return merged;
+                        },
+                    },
+                },
+            },
+        },
     }),
     link: batchHttpLink,
 });

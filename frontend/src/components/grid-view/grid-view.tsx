@@ -11,10 +11,10 @@ import {SortProps} from "../modals/sort-modal";
 import PageSpinner from "../util/page-spinner";
 import Link from "next/link";
 
-type GridViewProps = QueryResult<any, OperationVariables> & SortProps;
+type GridViewProps = Partial<QueryResult<any, OperationVariables> & SortProps>;
 
 export const GridView: FC<GridViewProps> = props => {
-    const {loading, error, data, fetchMore} = props;
+    const {loading, error, data, fetchMore, sort, ascending} = props;
     const showMessage = useMessage();
     const loadMoreImages = useCallback(
         () =>
@@ -22,7 +22,11 @@ export const GridView: FC<GridViewProps> = props => {
                 () =>
                     fetchMore({
                         variables: {
-                            offset: data.images.length,
+                            query: {
+                                limit:30,
+                                sort, ascending,
+                                offset: data.images.length,
+                            }
                         },
                     }),
                 2500,

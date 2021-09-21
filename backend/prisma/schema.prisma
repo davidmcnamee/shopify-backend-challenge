@@ -18,6 +18,7 @@ model User {
   uploadJobs     UploadJob[]
   followers      Following[] @relation(name: "Followers")
   following      Following[] @relation(name: "Followees")
+  forSale       Boolean @default(false)
   amount      Int?
   currency    String?
   discount    Int?

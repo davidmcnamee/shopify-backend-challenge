@@ -15,6 +15,10 @@ export const errors = {
     INVALID_FILE_EXTENSION: "Invalid file extension.",
     FOR_SALE_IMAGE_MUST_HAVE_PRICE:
         "An image that's on sale must contain price information.",
+    FOR_SALE_USER_MUST_HAVE_PRICE:
+        "To enable paid account mode, pricing info must be included.",
+    FOR_SALE_USER_STRIPE_UNVERIFIED:
+        "To enable paid account mode, your stripe account must be verified.",
 };
 
 type ErrorCode = keyof typeof errors;

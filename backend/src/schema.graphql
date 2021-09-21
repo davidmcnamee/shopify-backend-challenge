@@ -3,10 +3,15 @@ type User {
     id: ID!
     username: String!
     email: String!
-    inventory: [Image!]!
+    ownedImages(query: ImageQuery!): [Image!]!
     # True if the user has been set up to
     # accept payments on their account
     acceptingPayments: Boolean!
+    following: [User!]!
+    followers: [User!]!
+    createdAt: Int!
+    forSale: Boolean!
+    price: Price
 }
 
 type Price {
@@ -113,7 +118,12 @@ input ImageQuery {
     ascending: Boolean!
     offset: Int!
     limit: Int!
-    userFilter: ID
+    userFilter: ID # deprecated
+}
+
+input UpdateSettingsInput {
+    forSale: Boolean!
+    price: PriceInput
 }
 
 union Object = Image | User
@@ -124,6 +134,7 @@ type Query {
     get(id: ID!): Object!
     imageUploadUrls(fileExtensions: [String!]!): [UploadUrl!]!
     me: User
+    user(username: String!): User
 }
 
 type ImageMutations {
@@ -138,6 +149,7 @@ type ImageMutations {
 type UserMutations {
     login(input: LoginInput!): User!
     register(input: RegisterInput!): User!
+    updateSettings(input: UpdateSettingsInput!): User!
 }
 
 type Mutation {

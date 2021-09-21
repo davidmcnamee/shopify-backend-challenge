@@ -53,14 +53,15 @@ type UserMenuProps = {username: string};
 const UserMenu: FC<UserMenuProps> = props => {
     const {username} = props;
     const [userMenuActive, toggleUserMenuActive] = useReducer(x => !x, false);
-
     return (
         <TopBar.UserMenu
             actions={[
                 {
                     items: [
-                        {content: "Profile", url: "/profile"},
-                        {content: "Images", url: "/my-images"},
+                        username
+                            ? {content: "Profile", url: `/u/${username}`}
+                            : {content: "Login", url: "/login"},
+                        {content: "Settings", url: "/settings"},
                     ],
                 },
             ]}

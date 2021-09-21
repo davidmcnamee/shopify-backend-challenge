@@ -1,15 +1,20 @@
 /** @format */
 
-import {Image as DbImage, Image, Prisma, User as DbUser} from ".prisma/client";
-import {zip} from "lodash";
-import {db, s3} from "./db";
-import {completeUploadJobAsync, generateImageName} from "./util";
-import {CustomContextType} from "./types/static";
+import { Image as DbImage, User as DbUser } from ".prisma/client";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dataproc from "@google-cloud/dataproc";
-import {Storage} from "@google-cloud/storage";
+import type { google } from "@google-cloud/dataproc/build/protos/protos";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import bcrypt from "bcryptjs";
+import { zip } from "lodash";
+import { Stripe } from "stripe";
+import { v4 as uuidv4 } from "uuid";
+import { db, s3 } from "./db";
+import { createError } from "./types/external-errors";
+import { CustomContextType } from "./types/static";
 import {
     ImageMutationsPurchaseImageArgs,
-    ImageMutationsResolvers,
     ImageMutationsSetLikeArgs,
     ImageMutationsUpdateImageArgs,
     ImageMutationsUploadImageArgs,
@@ -25,26 +30,17 @@ import {
     User,
     UserMutations,
     UserMutationsLoginArgs,
-    UserMutationsRegisterArgs,
-    UserMutationsResolvers,
-    UserResolvers,
+    UserMutationsRegisterArgs, UserResolvers
 } from "./types/types";
 import {
-    assertImageExists,
-    assertImageIsPurchaseable,
-    assertCorrectUser,
-    assertUserExists,
-    assertImagesUnique,
-    assertFileExtensionsAllowed,
+    completeUploadJobAsync,
+    generateImageName,
+    parseImageQueryArgs
+} from "./util";
+import {
+    assertCorrectUser, assertFileExtensionsAllowed, assertImageExists,
+    assertImageIsPurchaseable, assertImagesUnique, assertUserExists
 } from "./validators";
-import bcrypt from "bcryptjs";
-import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
-import {S3Client, GetObjectCommand, PutObjectCommand} from "@aws-sdk/client-s3";
-import {v4 as uuidv4} from "uuid";
-import {PrismaClientKnownRequestError} from "@prisma/client/runtime";
-import {createError} from "./types/external-errors";
-import type {google} from "@google-cloud/dataproc/build/protos/protos";
-import {Stripe} from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2020-08-27",
@@ -66,14 +62,33 @@ const User: UserResolvers<CustomContextType, DbUser> = {
         assertCorrectUser(context.getUser(), parent.id);
         return parent.email;
     },
-    inventory: async (parent, args, context, info) => {
-        const isCurrentUser = context.getUser().id === parent.id;
+    ownedImages: async (parent, args, context, info) => {
+        const imageQueryProps = parseImageQueryArgs(args.query);
         return db.image.findMany({
+            ...imageQueryProps,
             where: {
+                ...publicOrOwned(context),
                 ownerId: parent.id,
-                public: !isCurrentUser ? true : undefined,
             },
         });
+    },
+    following: async (parent, args, context, info) => {
+        return db.user.findMany({
+            where: {
+                following: {some: {followeeId: parent.id}},
+            },
+        });
+    },
+    followers: async (parent, args, context, info) => {
+        return db.user.findMany({
+            where: {
+                following: {some: {followerId: parent.id}},
+            },
+        });
+    },
+    price: async (parent, args, context, info) => {
+        if (!parent.forSale) return null;
+        return parent;
     },
     acceptingPayments: async (parent, _args, context) => {
         assertCorrectUser(context.getUser(), parent.id);
@@ -89,7 +104,7 @@ const ImageType: ImageResolvers<CustomContextType, DbImage> = {
     price: parent => {
         if (
             parent.currency &&
-            parent.currency !== undefined &&
+            parent.amount !== undefined &&
             parent.discount !== undefined
         )
             return parent;
@@ -174,22 +189,11 @@ const Query: QueryResolvers<CustomContextType> = {
         return [...images, ...users];
     },
     images: (_parent, args, context, info) => {
-        const {sort, limit, offset, ascending, userFilter} = args.query;
-        const direction = ascending ? "asc" : "desc";
-        const orderBy = (
-            {
-                PRICE: {amount: direction},
-                LIKES: {likes: {_count: direction}},
-                UPLOAD_DATE: {createdAt: direction},
-            } as const
-        )[sort];
+        const imageQueryProps = parseImageQueryArgs(args.query);
         return db.image.findMany({
-            orderBy,
-            skip: offset,
-            take: limit,
+            ...imageQueryProps,
             where: {
                 ...publicOrOwned(context),
-                ownerId: userFilter,
             },
         });
     },
@@ -376,6 +380,26 @@ const ImageMutations = {
 };
 
 const UserMutations = {
+    updateSettings: async (args, context) => {
+        const user = context.getUser();
+        assertUserExists(user);
+        const {forSale, price} = args.input;
+        if(forSale) {
+            if(!price)throw createError("FOR_SALE_USER_MUST_HAVE_PRICE");
+            if(!user.stripeAccountId) throw createError("FOR_SALE_USER_STRIPE_UNVERIFIED");
+            const stripeAccount = await stripe.accounts.retrieve(user.stripeAccountId);
+            if(!stripeAccount.details_submitted) throw createError("FOR_SALE_USER_STRIPE_UNVERIFIED");
+        }
+        return db.user.update({
+            where: {id: user.id},
+            data: {
+                forSale,
+                amount: price?.amount,
+                discount: price?.discount,
+                currency: price?.currency,
+            },
+        });
+    },
     login: async (args: UserMutationsLoginArgs, context: CustomContextType) => {
         const {user} = await context.authenticate("graphql-local", {
             email: args.input.username,
@@ -390,11 +414,13 @@ const UserMutations = {
     ) => {
         const passwordHash = await bcrypt.hash(args.input.password, 10);
         try {
+            const stripeAccount = await stripe.accounts.create({type: "express"});
             const user = await db.user.create({
                 data: {
                     username: args.input.username,
                     email: args.input.email,
                     password: passwordHash,
+                    stripeAccountId: stripeAccount.id,
                 },
             });
             await context.login(user);

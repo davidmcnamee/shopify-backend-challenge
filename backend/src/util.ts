@@ -16,6 +16,7 @@ import {promisify} from "util";
 import {s3} from "./db";
 import type {LROperation} from "google-gax/build/src/clientInterface";
 import {db} from "./db";
+import {ImageQuery} from "./types/types";
 
 type IJob = google.cloud.dataproc.v1.IJob;
 type IJobMetadata = google.cloud.dataproc.v1.IJobMetadata;
@@ -84,3 +85,16 @@ export const completeUploadJobAsync: CompleteJobAsync = async (
     });
     console.log("SUCCESS: ", successCount);
 };
+
+export function parseImageQueryArgs(query: ImageQuery) {
+    const {sort, limit, offset, ascending} = query;
+    const direction = ascending ? "asc" : "desc";
+    const orderBy = (
+        {
+            PRICE: {amount: direction},
+            LIKES: {likes: {_count: direction}},
+            UPLOAD_DATE: {createdAt: direction},
+        } as const
+    )[sort];
+    return {orderBy, take: limit, skip: offset};
+}

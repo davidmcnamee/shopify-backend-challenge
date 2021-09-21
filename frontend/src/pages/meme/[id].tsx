@@ -7,6 +7,8 @@ import {useRouter} from "next/router";
 import React, {FC, useState} from "react";
 import styled from "styled-components";
 import {LikeButton} from "../../components/buttons/like";
+import {handleError} from "../../components/message/error-handler";
+import {useMessage} from "../../components/message/message";
 import {UpdateImageModal} from "../../components/modals/update-modal";
 import PageSpinner from "../../components/util/page-spinner";
 import {Left, Right, Split} from "../../components/util/split";
@@ -34,9 +36,15 @@ const SingleMemePage: FC = () => {
         skip: !id,
     });
     const [modalOpen, setModalOpen] = useState(false);
+    const showMessage = useMessage();
     if (loading || !id) return <PageSpinner />;
-    if (error) return <div>error</div>;
-    console.log("SUCCESS :", data);
+    if (error)
+        return handleError(
+            error,
+            showMessage,
+            "An error occurred while retrieving this meme, please try again later.",
+        );
+
     let oldPrice = null;
     let discountedPrice = null;
     let discount = null;
